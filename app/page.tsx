@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Search, ShoppingBag, Menu, X, Sparkles, Download, ShieldCheck, Globe2, ChevronRight } from "lucide-react";
 
 const categories = [
@@ -88,7 +89,7 @@ export default function Home() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {visibleProducts.map(p=><article key={p.id} className="product-card overflow-hidden rounded-2xl border border-slate-100 bg-white">
             <div className={`relative h-48 bg-gradient-to-br ${p.bg} flex items-center justify-center`}><span className="text-[76px] text-ink/80">{p.art}</span><span className="absolute top-4 left-4 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-extrabold tracking-wider text-teal">{p.tag}</span></div>
-            <div className="p-5"><p className="text-[10px] uppercase tracking-widest font-bold text-teal">{p.category} · {p.type}</p><h3 className="mt-2 min-h-[48px] font-bold leading-6 text-ink">{p.name}</h3><p className="mt-2 min-h-[58px] text-xs leading-5 text-slate-500">{p.description}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><div><strong className="text-lg text-ink">{p.price}</strong>{p.old && <span className="ml-2 text-xs text-slate-400 line-through">{p.old}</span>}</div><button onClick={()=>alert(p.tag==="COMING SOON"?"This product is being prepared for launch.":"The product is in development. Checkout will be enabled after launch.")} className="rounded-full bg-ink px-4 py-2.5 text-[11px] font-bold text-white hover:bg-teal">{p.tag==="COMING SOON"?"Coming soon":"View product"}</button></div></div>
+            <div className="p-5"><p className="text-[10px] uppercase tracking-widest font-bold text-teal">{p.category} · {p.type}</p><h3 className="mt-2 min-h-[48px] font-bold leading-6 text-ink">{p.name}</h3><p className="mt-2 min-h-[58px] text-xs leading-5 text-slate-500">{p.description}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><div><strong className="text-lg text-ink">{p.price}</strong>{p.old && <span className="ml-2 text-xs text-slate-400 line-through">{p.old}</span>}</div><Link href={`/products/${({1:"freelancer-client-to-payment-system",2:"complete-brand-starter-kit",3:"website-launch-checklist",4:"career-ready-cv-portfolio-pack"} as Record<number,string>)[p.id]}`} className="rounded-full bg-ink px-4 py-2.5 text-[11px] font-bold text-white hover:bg-teal">{p.tag==="COMING SOON"?"View details":"View product"}</Link></div></div>
           </article>)}
         </div>
         {visibleProducts.length===0 && <div className="rounded-2xl bg-white p-12 text-center text-sm text-slate-500">No products match that search yet. Try another category or keyword.</div>}
