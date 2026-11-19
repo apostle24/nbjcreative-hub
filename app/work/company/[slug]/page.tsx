@@ -12,7 +12,7 @@ type Employer = {
   company_slug: string;
   description: string | null;
   website_url: string | null;
-  logo_url: string | null;
+  logo_url: string | null;\n  is_verified: boolean;
 };
 
 type Job = {
@@ -49,7 +49,7 @@ export default function PublicEmployerCompanyPage() {
       const supabase = createClient();
       const {data:profile,error:profileError} = await supabase
         .from("work_employer_profiles")
-        .select("id,company_name,company_slug,description,website_url,logo_url")
+        .select("id,company_name,company_slug,description,website_url,logo_url,is_verified")
         .eq("company_slug",slug).maybeSingle();
       if (!active) return;
       if (profileError || !profile) {
@@ -89,7 +89,7 @@ export default function PublicEmployerCompanyPage() {
       <p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">NBJ Work · Employer profile</p>
       <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
         {company.logo_url ? <img src={company.logo_url} alt="" className="h-20 w-20 rounded-2xl border border-slate-200 object-cover"/> : <div className="grid h-20 w-20 place-items-center rounded-2xl bg-teal-50 text-2xl font-extrabold text-teal-800">{company.company_name.slice(0,1).toUpperCase()}</div>}
-        <div><h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-5xl">{company.company_name}</h1><p className="mt-2 text-sm text-slate-500">Company and organisation profile</p></div>
+        <div><h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-5xl">{company.company_name}</h1><div className="mt-2 flex flex-wrap items-center gap-2"><p className="text-sm text-slate-500">Company and organisation profile</p>{company.is_verified && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">✓ Verified Employer</span>}</div></div>
       </div>
       {company.description ? <p className="mt-8 max-w-3xl whitespace-pre-wrap text-base leading-8 text-slate-600">{company.description}</p> : <p className="mt-8 text-sm text-slate-500">This organisation has not added an introduction yet.</p>}
       {company.website_url && <a href={company.website_url} target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-teal-700 hover:bg-teal-50"><Globe size={16}/> Visit organisation website</a>}
