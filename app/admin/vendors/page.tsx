@@ -105,6 +105,41 @@ export default function AdminVendorsPage() {
     }
   }
 
+  async function approveVendor(vendor: Vendor) {
+    setBusyId(vendor.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/vendors/approve", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vendorId: vendor.id,
+          reviewNote: notes[vendor.id]?.trim() || ""
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok || result.ok !== true || result.vendor?.status !== "approved") {
+        throw new Error(result.error || "Approval was not confirmed by the server.");
+      }
+
+      setVendors(current => current.map(item =>
+        item.id === vendor.id
+          ? { ...item, status: "approved", review_note: result.vendor.review_note, reviewed_at: result.vendor.reviewed_at }
+          : item
+      ));
+      setFilter("approved");
+      setNotice(result.vendor.store_name + " has been approved successfully.");
+      await loadVendors();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to approve this vendor.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
   const visible = filter === "all" ? vendors : vendors.filter(v => v.status === filter);
 
   if (loading) return <main className="min-h-screen grid place-items-center text-sm text-slate-500">Checking administrator access...</main>;
@@ -129,7 +164,7 @@ export default function AdminVendorsPage() {
           {vendor.review_note && <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">Previous review note: {vendor.review_note}</p>}
           <label className="mt-5 block text-xs font-semibold text-slate-600">Review note (optional)<textarea rows={2} value={notes[vendor.id] ?? vendor.review_note ?? ""} onChange={e=>setNotes(current=>({...current,[vendor.id]:e.target.value}))} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal" placeholder="Explain your decision or give the applicant feedback."/></label>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button disabled={!!busyId} onClick={()=>review(vendor,"approved")} className="rounded-lg bg-teal-700 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">{busyId===vendor.id?"Saving...":"Approve vendor"}</button>
+            <button type="button" disabled={!!busyId} onClick={()=>approveVendor(vendor)} className="rounded-lg bg-teal-700 px-5 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">{busyId===vendor.id?"Approving...":"Approve application"}</button>
             {vendor.status!=="rejected" && <button disabled={!!busyId} onClick={()=>review(vendor,"rejected")} className="rounded-lg border border-rose-200 px-4 py-2.5 text-xs font-bold text-rose-700 disabled:opacity-50">Reject</button>}
             {vendor.status!=="suspended" && <button disabled={!!busyId} onClick={()=>review(vendor,"suspended")} className="rounded-lg border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700 disabled:opacity-50">Suspend</button>}
             {vendor.status!=="pending" && <button disabled={!!busyId} onClick={()=>review(vendor,"pending")} className="rounded-lg border border-amber-200 px-4 py-2.5 text-xs font-bold text-amber-800 disabled:opacity-50">Return to pending</button>}
