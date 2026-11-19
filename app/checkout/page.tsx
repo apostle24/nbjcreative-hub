@@ -15,6 +15,7 @@ export default function CheckoutPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -29,6 +30,23 @@ export default function CheckoutPage() {
     load();
     return () => { active = false; };
   }, []);
+
+  async function startPayment() {
+    if (!order) return;
+    setPaying(true); setError("");
+    try {
+      const response = await fetch("/api/payments/paystack/initialize", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderReference: order.order_reference })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not start payment.");
+      window.location.assign(result.authorizationUrl);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start payment.");
+      setPaying(false);
+    }
+  }
 
   async function createOrder() {
     setBusy(true); setError("");
@@ -64,8 +82,10 @@ export default function CheckoutPage() {
       {!loading && order && <section className="mt-8 rounded-2xl bg-white p-8">
         <div className="text-sm font-bold text-teal">Pending order created</div><h2 className="mt-2 text-2xl font-extrabold text-ink">Order {order.order_reference}</h2>
         <p className="mt-3 text-sm text-slate-500">Amount recorded: <strong className="text-ink">{new Intl.NumberFormat("en", {style:"currency",currency:order.order_currency}).format(Number(order.order_amount))}</strong></p>
-        <p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-800">This is an order record only. Paystack checkout has not been connected, so no payment has been collected and no downloads are available yet.</p>
-        <Link href="/#shop" className="mt-6 inline-flex rounded-full bg-ink px-6 py-3 text-sm font-bold text-white">Continue shopping</Link>
+        <p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-800">Continue to Paystack's secure test checkout. Your order is marked paid only after our server verifies the transaction amount and currency.</p>
+        {error && <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
+        <button onClick={startPayment} disabled={paying} className="mt-6 w-full rounded-full bg-teal px-7 py-4 text-sm font-bold text-white hover:bg-ink disabled:opacity-50">{paying ? "Connecting to Paystack..." : "Pay now with Paystack"}</button>
+        <Link href="/#shop" className="mt-4 inline-flex text-sm font-semibold text-slate-500 hover:text-teal">Continue shopping</Link>
       </section>}
     </div>
   </main>;
