@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 type Application = {
   id: string; job_id: string; applicant_id: string; cover_letter: string;
   status: string; employer_note: string | null; quality_score: number | null;
-  interview_at: string | null; created_at: string;
+  interview_at: string | null; created_at: string; resume_storage_path: string | null; resume_file_name: string | null;
   job: { title: string; slug: string } | null;
 };
 
@@ -21,6 +21,7 @@ export default function EmployerApplicationsPage() {
   const [filter,setFilter] = useState("all");
   const [drafts,setDrafts] = useState<Record<string,{status:string;note:string;score:string;interviewAt:string}>>({});
   const [busy,setBusy] = useState("");
+  const [cvBusy,setCvBusy] = useState("");
   const [error,setError] = useState("");
   const [notice,setNotice] = useState("");
 
@@ -36,7 +37,7 @@ export default function EmployerApplicationsPage() {
     const jobRows=jobs??[];
     if(jobRows.length===0){setApplications([]);setLoading(false);return;}
     const {data:rows,error:appError}=await supabase.from("work_job_applications")
-      .select("id,job_id,applicant_id,cover_letter,status,employer_note,quality_score,interview_at,created_at")
+      .select("id,job_id,applicant_id,cover_letter,status,employer_note,quality_score,interview_at,created_at,resume_storage_path,resume_file_name")
       .in("job_id",jobRows.map(j=>j.id)).order("created_at",{ascending:false});
     if(appError){setError("We couldn't load applications. Please check that the NBJ Work hiring update has been installed.");setLoading(false);return;}
     const jobMap=new Map(jobRows.map(j=>[j.id,{title:j.title,slug:j.slug}]));
@@ -65,6 +66,19 @@ export default function EmployerApplicationsPage() {
     setBusy("");
   }
 
+  async function openCv(applicationId:string){
+    const popup=window.open("about:blank","_blank");
+    if(!popup){setError("Allow pop-ups for this site to open candidate CVs.");return;}
+    setCvBusy(applicationId);setError("");
+    try{
+      const response=await fetch("/api/work/employer/applications/cv",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({applicationId})});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok||!result.ok){popup.close();setError(result.error||"Could not open this CV.");}
+      else popup.location.href=result.url;
+    }catch{popup.close();setError("Could not open this CV. Please try again.");}
+    setCvBusy("");
+  }
+
   const visible=filter==="all"?applications:applications.filter(a=>a.status===filter);
   if(loading)return <main className="min-h-screen grid place-items-center bg-[#F5F7F8] text-sm text-slate-500">Loading applications...</main>;
 
@@ -82,7 +96,7 @@ export default function EmployerApplicationsPage() {
         <label className="text-sm font-semibold text-slate-700">Application quality (1–5)<select value={drafts[a.id]?.score??""} onChange={e=>setDrafts(p=>({...p,[a.id]:{...p[a.id],score:e.target.value}}))} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3"><option value="">Not rated</option>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n} – {["","Needs improvement","Fair","Good","Very good","Excellent"][n]}</option>)}</select></label>
         {drafts[a.id]?.status==="interviewing"&&<label className="text-sm font-semibold text-slate-700 md:col-span-2">Interview date and time<input type="datetime-local" value={drafts[a.id]?.interviewAt??""} onChange={e=>setDrafts(p=>({...p,[a.id]:{...p[a.id],interviewAt:e.target.value}}))} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3"/></label>}
         <label className="text-sm font-semibold text-slate-700 md:col-span-2">Private employer notes<textarea rows={3} maxLength={2000} value={drafts[a.id]?.note??""} onChange={e=>setDrafts(p=>({...p,[a.id]:{...p[a.id],note:e.target.value}}))} placeholder="Record strengths, concerns or interview feedback. Only your employer team can see this." className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"/></label>
-      </div>
+      </div><div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4"><div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">CV attachment</p><p className="mt-1 text-sm font-semibold text-slate-700">{a.resume_file_name||"No CV attached"}</p></div>{a.resume_storage_path&&<button type="button" onClick={()=>openCv(a.id)} disabled={cvBusy===a.id} className="rounded-lg bg-teal-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-teal-800 disabled:opacity-60">{cvBusy===a.id?"Preparing CV...":"Open candidate CV"}</button>}</div>
       <button onClick={()=>save(a.id)} disabled={busy===a.id} className="mt-4 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-60">{busy===a.id?"Saving...":"Save hiring review"}</button>
     </article>)}</section>
     <div className="mt-8"><Link href="/work/employer" className="text-sm font-semibold text-teal-700 hover:underline">← Employer profile</Link></div>
