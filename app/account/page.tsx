@@ -70,7 +70,7 @@ export default function AccountPage() {
           <button disabled={busy} className="w-full rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white hover:bg-teal disabled:opacity-60">{busy ? "Please wait..." : mode === "signin" ? "Sign in" : "Create account"}</button>
         </form>
       </section>
-      <p className="mt-5 text-center text-sm"><Link href="/account/profile" className="font-semibold text-teal hover:underline">Profile & settings</Link><span className="mx-2 text-slate-300">·</span><Link href="/account/wishlist" className="font-semibold text-teal hover:underline">View my wishlist</Link><span className="mx-2 text-slate-300">·</span><Link href="/account/orders" className="font-semibold text-teal hover:underline">View my orders and downloads</Link></p><p className="mt-3 text-center text-xs text-slate-400"><Link href="/" className="text-teal hover:underline">Return to shop</Link></p>
+      <p className="mt-5 text-center text-sm"><Link href="/account/profile" className="font-semibold text-teal hover:underline">Profile & settings</Link><span className="mx-2 text-slate-300">·</span><Link href="/account/notifications" className="font-semibold text-teal hover:underline">Notifications</Link><span className="mx-2 text-slate-300">·</span><Link href="/account/wishlist" className="font-semibold text-teal hover:underline">View my wishlist</Link><span className="mx-2 text-slate-300">·</span><Link href="/account/orders" className="font-semibold text-teal hover:underline">View my orders and downloads</Link></p><p className="mt-3 text-center text-xs text-slate-400"><Link href="/" className="text-teal hover:underline">Return to shop</Link></p>
     </div>
   </main>;
 }
