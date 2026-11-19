@@ -11,7 +11,7 @@ type Job = {
   country: string | null; salary_min: number | string | null;
   salary_max: number | string | null; currency: string; published_at: string | null;
   application_deadline: string | null;
-  employer: { company_name: string; company_slug: string } | null;
+  employer: { company_name: string; company_slug: string; is_verified: boolean } | null;
 };
 
 const typeLabel: Record<string,string> = {
@@ -32,7 +32,7 @@ export default function WorkPage() {
     async function load() {
       const supabase = createClient();
       const { data, error } = await supabase.from("work_job_posts")
-        .select("id,title,slug,description,opportunity_type,workplace_type,location,country,salary_min,salary_max,currency,published_at,application_deadline,employer:work_employer_profiles(company_name,company_slug)")
+        .select("id,title,slug,description,opportunity_type,workplace_type,location,country,salary_min,salary_max,currency,published_at,application_deadline,employer:work_employer_profiles(company_name,company_slug,is_verified)")
         .eq("status","published").order("published_at",{ascending:false}).limit(100);
       if (!active) return;
       if (error) setError("We couldn't load opportunities right now. Please try again later.");
@@ -79,7 +79,7 @@ export default function WorkPage() {
        visible.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center"><BriefcaseBusiness className="mx-auto text-slate-300" size={34}/><h3 className="mt-4 font-bold text-slate-800">{jobs.length === 0 ? "New opportunities are on the way" : "No matching opportunities"}</h3><p className="mt-2 text-sm text-slate-500">{jobs.length === 0 ? "Published jobs and freelance projects will appear here." : "Try a different keyword or filter."}</p></div> :
        <div className="grid gap-4 md:grid-cols-2">{visible.map(job=><article key={job.id} className="rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-2"><span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800">{typeLabel[job.opportunity_type] ?? job.opportunity_type}</span><span className="text-xs font-semibold text-slate-500">{job.workplace_type === "onsite" ? "On-site" : job.workplace_type === "hybrid" ? "Hybrid" : "Remote"}</span></div>
-        <h3 className="mt-4 text-xl font-extrabold text-slate-900">{job.title}</h3><p className="mt-1 text-sm font-semibold text-slate-600">{job.employer?.company_name ?? "Independent client"}</p>
+        <h3 className="mt-4 text-xl font-extrabold text-slate-900">{job.title}</h3><div className="mt-1 flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-slate-600">{job.employer?.company_name ?? "Independent client"}</p>{job.employer?.is_verified && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-800">✓ Verified Employer</span>}</div>
         <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-500">{job.description}</p>
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500"><span className="inline-flex items-center gap-1"><MapPin size={14}/>{[job.location,job.country].filter(Boolean).join(", ") || "Location flexible"}</span>{job.application_deadline && <span className="inline-flex items-center gap-1"><Clock3 size={14}/>Apply by {new Date(job.application_deadline+"T00:00:00").toLocaleDateString()}</span>}</div>
         <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="text-sm font-bold text-slate-900">{salary(job)}</span><Link href={"/work/"+job.slug} className="rounded-full bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-teal-700">View opportunity</Link></div>
