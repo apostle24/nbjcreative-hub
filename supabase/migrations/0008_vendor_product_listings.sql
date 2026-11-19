@@ -162,3 +162,16 @@ using (
       and v.status = 'approved'
   )
 );
+
+
+drop policy if exists "Products: vendors read own listings" on public.products;
+create policy "Products: vendors read own listings"
+on public.products for select to authenticated
+using (
+  exists (
+    select 1 from public.vendor_profiles v
+    where v.id = vendor_id
+      and v.owner_id = (select auth.uid())
+      and v.status = 'approved'
+  )
+);
