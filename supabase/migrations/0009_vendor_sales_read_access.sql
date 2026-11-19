@@ -24,7 +24,7 @@ using (
     from public.order_items oi
     join public.products p on p.id = oi.product_id
     join public.vendor_profiles v on v.id = p.vendor_id
-    where oi.order_id = id
+    where oi.order_id = orders.id
       and v.owner_id = (select auth.uid())
       and v.status = 'approved'
   )
