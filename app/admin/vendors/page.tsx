@@ -110,8 +110,8 @@ export default function AdminVendorsPage() {
     setError("");
     setNotice("");
     try {
-      const response = await fetch("/api/admin/vendors/approve", {
-        method: "POST",
+      const response = await fetch("/api/admin/vendors/review", {
+        method: "PATCH",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -121,7 +121,7 @@ export default function AdminVendorsPage() {
       });
 
       const result = await response.json();
-      if (!response.ok || result.ok !== true || result.vendor?.status !== "approved") {
+      if (!response.ok || result.vendor?.id !== vendor.id || result.vendor?.status !== "approved") {
         throw new Error(result.error || "Approval was not confirmed by the server.");
       }
 
@@ -131,7 +131,7 @@ export default function AdminVendorsPage() {
           : item
       ));
       setFilter("approved");
-      setNotice(result.vendor.store_name + " has been approved successfully.");
+      setNotice(vendor.store_name + " has been approved successfully.");
       await loadVendors();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to approve this vendor.");
