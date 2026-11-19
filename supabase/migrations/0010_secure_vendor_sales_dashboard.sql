@@ -8,7 +8,7 @@ returns table (
   product_title text,
   quantity integer,
   unit_price numeric,
-  currency character,
+  currency text,
   payment_status public.order_payment_status,
   order_created_at timestamptz
 )
