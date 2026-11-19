@@ -6,6 +6,8 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, BriefcaseBusiness, MapPin } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+type CandidateDocument = { id: string; file_name: string; size_bytes: number; };
+
 type Job = {
  id:string; title:string; slug:string; description:string; opportunity_type:string;
  workplace_type:string; location:string|null; country:string|null;
@@ -20,6 +22,8 @@ export default function WorkOpportunityPage() {
  const [loading,setLoading] = useState(true);
  const [error,setError] = useState("");
  const [coverLetter,setCoverLetter] = useState("");
+ const [candidateDocuments,setCandidateDocuments] = useState<CandidateDocument[]>([]);
+ const [selectedCv,setSelectedCv] = useState("");
  const [busy,setBusy] = useState(false);
  const [message,setMessage] = useState("");
  const [formError,setFormError] = useState("");
@@ -28,6 +32,11 @@ export default function WorkOpportunityPage() {
   let active=true;
   async function load(){
    const supabase=createClient();
+   const { data: { user } } = await supabase.auth.getUser();
+   if (user) {
+    const { data: docs } = await supabase.from("work_candidate_documents").select("id,file_name,size_bytes").eq("user_id",user.id).eq("document_type","resume").order("created_at",{ascending:false});
+    if (active) setCandidateDocuments((docs || []) as CandidateDocument[]);
+   }
    const {data,error}=await supabase.from("work_job_posts")
     .select("id,title,slug,description,opportunity_type,workplace_type,location,country,salary_min,salary_max,currency,application_deadline,application_url,application_email,employer:work_employer_profiles(company_name,company_slug,description,website_url)")
     .eq("slug",params.slug).eq("status","published").maybeSingle();
@@ -47,10 +56,10 @@ export default function WorkOpportunityPage() {
   if(!user){window.location.assign("/account?next="+encodeURIComponent("/work/"+params.slug));return;}
   if(!job){setBusy(false);return;}
   const {error}=await supabase.from("work_job_applications").insert({
-   job_id:job.id,applicant_id:user.id,cover_letter:coverLetter.trim()
+   job_id:job.id,applicant_id:user.id,cover_letter:coverLetter.trim(),resume_document_id:selectedCv || null
   });
   if(error)setFormError(error.code==="23505"?"You have already applied for this opportunity.":error.message);
-  else {setMessage("Your application has been submitted successfully.");setCoverLetter("");}
+  else {setMessage("Your application has been submitted successfully.");setCoverLetter("");setSelectedCv("");}
   setBusy(false);
  }
 
@@ -80,7 +89,7 @@ export default function WorkOpportunityPage() {
  </article>
  {job.application_url||job.application_email?<section className="mt-6 rounded-2xl border border-slate-200 bg-white p-7"><h2 className="font-extrabold text-slate-900">How to apply</h2><p className="mt-2 text-sm text-slate-600">The employer has provided an external application channel.</p>{job.application_url&&<a href={job.application_url} target="_blank" rel="noreferrer" className="mt-5 inline-flex rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white hover:bg-teal-700">Go to application page</a>}{job.application_email&&<p className="mt-4 text-sm text-slate-600">Email: <a className="font-semibold text-teal-700" href={"mailto:"+job.application_email}>{job.application_email}</a></p>}</section>:
  <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-7"><div className="flex items-center gap-2"><BriefcaseBusiness className="text-teal-700"/><h2 className="text-xl font-extrabold text-slate-900">Apply for this opportunity</h2></div><p className="mt-2 text-sm text-slate-600">Sign in to submit your application. Your application is shared only with the employer and authorised administrators.</p>
- <form onSubmit={apply} className="mt-5 space-y-4"><label className="block text-sm font-semibold text-slate-700">Cover letter<textarea required minLength={20} maxLength={5000} value={coverLetter} onChange={e=>setCoverLetter(e.target.value)} rows={7} placeholder="Introduce yourself and explain why you're a good fit..." className="mt-2 w-full rounded-xl border border-slate-200 p-4 text-sm outline-none focus:border-teal-700"/></label>
+ <form onSubmit={apply} className="mt-5 space-y-4"><label className="block text-sm font-semibold text-slate-700">Cover letter<textarea required minLength={20} maxLength={5000} value={coverLetter} onChange={e=>setCoverLetter(e.target.value)} rows={7} placeholder="Introduce yourself and explain why you're a good fit..." className="mt-2 w-full rounded-xl border border-slate-200 p-4 text-sm outline-none focus:border-teal-700"/></label><label className="block text-sm font-semibold text-slate-700">Attach a CV (optional)<select value={selectedCv} onChange={e=>setSelectedCv(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm"><option value="">No CV attached</option>{candidateDocuments.map(doc=><option key={doc.id} value={doc.id}>{doc.file_name} · {(doc.size_bytes/1024/1024).toFixed(1)} MB</option>)}</select><span className="mt-1 block text-xs font-normal text-slate-500">{candidateDocuments.length===0?<><Link href="/account/work-profile" className="font-bold text-teal-700 hover:underline">Upload a CV in your candidate profile</Link> before applying if you want to attach one.</>:"Only the employer for this opportunity can access the CV attached to your application."}</span></label>
  {formError&&<p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{formError}</p>}{message&&<p role="status" className="rounded-xl bg-teal-50 p-3 text-sm text-teal-800">{message}</p>}
  <button disabled={busy||!!message} className="rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-60">{busy?"Submitting...":"Submit application"}</button></form></section>}
  </>}
