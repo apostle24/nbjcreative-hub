@@ -19,7 +19,7 @@ export async function GET() {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
   const { data, error } = await auth.admin!.from("vendor_payout_requests")
-    .select("id,vendor_id,amount,currency,status,vendor_note,admin_note,requested_at,reviewed_at,paid_at,vendor_profiles(store_name,store_slug,contact_email)")
+    .select("id,vendor_id,amount,currency,status,vendor_note,admin_note,payout_method_snapshot,requested_at,reviewed_at,paid_at,vendor_profiles(store_name,store_slug,contact_email)")
     .order("requested_at", { ascending: false }).limit(500);
   if (error) return NextResponse.json({ error: "Could not load payout requests: " + error.message }, { status: 500 });
   return NextResponse.json({ requests: data ?? [] });
