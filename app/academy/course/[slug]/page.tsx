@@ -18,7 +18,7 @@ type Lesson = {
 };
 type Section = { id: string; title: string; description: string; sort_order: number; lessons: Lesson[]; };
 type Enrollment = { id: string; status: string; };
-type Quiz = { id: string; title: string; instructions: string; pass_mark: number; };
+type Quiz = { id: string; title: string; instructions: string; pass_mark: number; };\ntype CourseReview = { review_id: string; student_name: string; rating: number; review: string; created_at: string; };
 
 export default function AcademyCoursePage() {
   const params = useParams<{ slug: string }>();
@@ -27,7 +27,7 @@ export default function AcademyCoursePage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [completed, setCompleted] = useState<string[]>([]);
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);\n  const [reviews, setReviews] = useState<CourseReview[]>([]);\n  const [myReviewId, setMyReviewId] = useState("");\n  const [myRating, setMyRating] = useState(5);\n  const [myReview, setMyReview] = useState("");
   const [selectedLessonId, setSelectedLessonId] = useState("");
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -135,7 +135,26 @@ export default function AcademyCoursePage() {
     setBusy(false);
   }
 
-  function formatPrice() {
+
+  async function saveCourseReview() {
+    if (!course || !enrollment || !["active", "completed"].includes(enrollment.status)) return;
+    setBusy(true); setError(""); setNotice("");
+    const db = createClient();
+    const payload = { course_id: course.id, enrollment_id: enrollment.id, student_id: userId, rating: myRating, review: myReview.trim() };
+    const result = myReviewId
+      ? await db.from("academy_course_reviews").update({ rating: myRating, review: myReview.trim(), updated_at: new Date().toISOString() }).eq("id", myReviewId)
+      : await db.from("academy_course_reviews").insert(payload).select("id").single();
+    if (result.error) {
+      setError("We couldn't save your course review. Please try again.");
+    } else {
+      if (!myReviewId && result.data) setMyReviewId(result.data.id);
+      const { data } = await db.rpc("get_academy_course_reviews", { p_course_id: course.id });
+      setReviews((data ?? []) as CourseReview[]);
+      setNotice("Thank you. Your course rating and review have been saved.");
+    }
+    setBusy(false);
+  }
+\n  function formatPrice() {
     const amount = Number(course?.price ?? 0);
     if (amount === 0) return "Free";
     try { return new Intl.NumberFormat("en", { style: "currency", currency: course?.currency ?? "GHS" }).format(amount); }
@@ -157,6 +176,13 @@ export default function AcademyCoursePage() {
         </section>
         {course.description && <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-lg font-extrabold text-slate-900">About this course</h2><p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{course.description}</p></section>}
         {isEnrolled && quizzes.length>0 && <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-6"><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">Test your knowledge</p><h2 className="mt-1 text-xl font-extrabold text-slate-900">Course assessments</h2><div className="mt-4 grid gap-3 md:grid-cols-2">{quizzes.map(quiz=><article key={quiz.id} className="rounded-xl border border-slate-200 p-4"><h3 className="font-bold text-slate-900">{quiz.title}</h3><p className="mt-1 text-xs text-slate-500">Pass mark: {quiz.pass_mark}%</p>{quiz.instructions&&<p className="mt-2 text-sm text-slate-600">{quiz.instructions}</p>}<Link href={"/academy/quiz/"+quiz.id} className="mt-4 inline-flex rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-bold text-white">Take assessment</Link></article>)}</div></section>}
+
+        <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">Student feedback</p><h2 className="mt-1 text-xl font-extrabold text-slate-900">Course reviews</h2></div><div className="text-right"><p className="text-2xl font-extrabold text-slate-900">{reviews.length ? (reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length).toFixed(1) : "—"} <span className="text-amber-500">★</span></p><p className="text-xs text-slate-500">{reviews.length} {reviews.length === 1 ? "review" : "reviews"}</p></div></div>
+          {isEnrolled && <div className="mt-5 rounded-xl bg-slate-50 p-4"><h3 className="font-bold text-slate-900">{myReviewId ? "Update your review" : "Rate this course"}</h3><p className="mt-1 text-xs text-slate-500">Only enrolled students can submit a rating.</p><div className="mt-3 flex gap-2" aria-label="Choose a rating">{[1,2,3,4,5].map(value=><button key={value} type="button" onClick={()=>setMyRating(value)} aria-label={value+" stars"} className={"text-2xl "+(value<=myRating?"text-amber-500":"text-slate-300")}>★</button>)}</div><textarea rows={3} maxLength={2000} value={myReview} onChange={e=>setMyReview(e.target.value)} placeholder="Share what you liked or what could be improved (optional)" className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"/><div className="mt-3 flex items-center justify-between gap-3"><span className="text-xs text-slate-500">{myReview.length}/2000 characters</span><button type="button" disabled={busy} onClick={saveCourseReview} className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Saving..." : myReviewId ? "Update review" : "Submit review"}</button></div></div>}
+          <div className="mt-5 space-y-4">{reviews.map(item=><article key={item.review_id} className="border-b border-slate-100 pb-4 last:border-0"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold text-slate-900">{item.student_name}</p><span className="text-amber-500">{"★".repeat(item.rating)}<span className="text-slate-300">{"★".repeat(5-item.rating)}</span></span></div>{item.review && <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">{item.review}</p>}<p className="mt-2 text-xs text-slate-400">{new Date(item.created_at).toLocaleDateString()}</p></article>)}</div>
+          {!reviews.length && <p className="mt-5 text-sm text-slate-500">No reviews yet. Enrolled students can be the first to share feedback.</p>}
+        </section>
         <section className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6">
             <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">Learning space</p><h2 className="mt-1 text-xl font-extrabold text-slate-900">{selectedLesson?.title ?? "Course lessons"}</h2></div>{selectedLesson && isEnrolled && <button type="button" disabled={busy} onClick={()=>toggleComplete(selectedLesson)} className={"rounded-xl px-4 py-2.5 text-xs font-bold "+(completed.includes(selectedLesson.id)?"bg-emerald-50 text-emerald-700":"bg-slate-900 text-white")}>{completed.includes(selectedLesson.id)?"Completed ✓":"Mark as complete"}</button>}</div>
