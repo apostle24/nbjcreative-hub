@@ -12,7 +12,8 @@ type Employer = {
   company_slug: string;
   description: string | null;
   website_url: string | null;
-  logo_url: string | null;\n  is_verified: boolean;
+  logo_url: string | null;
+  is_verified: boolean;
 };
 
 type Job = {
