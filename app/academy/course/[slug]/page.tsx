@@ -18,7 +18,8 @@ type Lesson = {
 };
 type Section = { id: string; title: string; description: string; sort_order: number; lessons: Lesson[]; };
 type Enrollment = { id: string; status: string; };
-type Quiz = { id: string; title: string; instructions: string; pass_mark: number; };\ntype CourseReview = { review_id: string; student_name: string; rating: number; review: string; created_at: string; };
+type Quiz = { id: string; title: string; instructions: string; pass_mark: number; };
+type CourseReview = { review_id: string; student_name: string; rating: number; review: string; created_at: string; };
 
 export default function AcademyCoursePage() {
   const params = useParams<{ slug: string }>();
@@ -27,7 +28,11 @@ export default function AcademyCoursePage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [completed, setCompleted] = useState<string[]>([]);
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);\n  const [reviews, setReviews] = useState<CourseReview[]>([]);\n  const [myReviewId, setMyReviewId] = useState("");\n  const [myRating, setMyRating] = useState(5);\n  const [myReview, setMyReview] = useState("");
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [reviews, setReviews] = useState<CourseReview[]>([]);
+  const [myReviewId, setMyReviewId] = useState("");
+  const [myRating, setMyRating] = useState(5);
+  const [myReview, setMyReview] = useState("");
   const [selectedLessonId, setSelectedLessonId] = useState("");
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -176,7 +181,8 @@ export default function AcademyCoursePage() {
     }
     setBusy(false);
   }
-\n  function formatPrice() {
+
+  function formatPrice() {
     const amount = Number(course?.price ?? 0);
     if (amount === 0) return "Free";
     try { return new Intl.NumberFormat("en", { style: "currency", currency: course?.currency ?? "GHS" }).format(amount); }
