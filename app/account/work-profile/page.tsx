@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, FileText, ExternalLink, Trash2, Upload, Save, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -56,7 +56,6 @@ export default function CandidateProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     setLoading(true);
@@ -235,7 +234,7 @@ export default function CandidateProfilePage() {
 
       <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-xl font-extrabold text-slate-900">My CV documents</h2><p className="mt-1 text-sm text-slate-500">Upload PDF, DOC or DOCX files. Maximum 10 MB per file.</p></div>
-          <div className="flex items-center gap-2"><input ref={fileInputRef} id="candidate-cv-upload" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={uploadDocument} disabled={uploading} className="sr-only"/><button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"><Upload size={16}/>{uploading ? "Uploading..." : "Upload CV"}</button></div>
+          <div className="flex items-center gap-3"><label htmlFor="candidate-cv-upload" className="text-sm font-semibold text-slate-600">{uploading ? "Uploading your CV..." : "Choose a CV file:"}</label><input id="candidate-cv-upload" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={uploadDocument} disabled={uploading} className="block max-w-full text-sm text-slate-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-teal-700 file:px-4 file:py-3 file:font-bold file:text-white hover:file:bg-teal-800 disabled:opacity-60"/></div>
         </div>
         <div className="mt-5 space-y-3">
           {documents.length === 0 ? <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center"><FileText className="mx-auto text-slate-400" size={30}/><p className="mt-3 text-sm font-semibold text-slate-700">No CV uploaded yet</p><p className="mt-1 text-xs text-slate-500">Upload your latest CV so you can use it in future NBJ Work applications.</p></div> : documents.map(doc => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4">
