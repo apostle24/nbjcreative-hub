@@ -59,7 +59,7 @@ export default function SupportPage() {
           <button disabled={busy} className="rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-50">{busy ? "Sending..." : "Submit support request"}</button>
         </form>
       </section>
-      <div className="mt-5 flex gap-5 text-sm"><Link href="/account/orders" className="font-semibold text-teal-700 hover:underline">My orders</Link><Link href="/account" className="font-semibold text-teal-700 hover:underline">My account</Link></div>
+      <div className="mt-5 flex flex-wrap gap-5 text-sm"><Link href="/help" className="font-semibold text-teal-700 hover:underline">Help Centre</Link><Link href="/account/support" className="font-semibold text-teal-700 hover:underline">My support tickets</Link><Link href="/account/orders" className="font-semibold text-teal-700 hover:underline">My orders</Link><Link href="/account" className="font-semibold text-teal-700 hover:underline">My account</Link></div>
     </div>
   </main>;
 }
