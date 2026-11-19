@@ -125,7 +125,7 @@ export default function VendorCentrePage() {
             <span className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusStyles}`}>{vendor.status}</span>
           </div>
           {vendor.status === "pending" && <p className="mt-3 text-sm leading-6 text-slate-600">Your application is waiting for administrator review. You can update your details below while it is pending.</p>}
-          {vendor.status === "approved" && <p className="mt-3 text-sm leading-6 text-slate-600">Your seller account is approved. Product listing tools will be available in the next Vendor Centre release.</p>}
+          {vendor.status === "approved" && <div className="mt-3"><p className="text-sm leading-6 text-slate-600">Your seller account is approved. You can now create product drafts for administrator review.</p><Link href="/vendor/products" className="mt-4 inline-flex rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white hover:bg-teal">Open seller workspace →</Link></div>}
           {vendor.review_note && <p className="mt-3 rounded-xl bg-mist p-3 text-sm text-slate-600">Review note: {vendor.review_note}</p>}
           <p className="mt-3 text-xs text-slate-400">Store address: /stores/{vendor.store_slug}</p>
         </div> : null}
