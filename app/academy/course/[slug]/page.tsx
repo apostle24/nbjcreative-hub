@@ -100,6 +100,28 @@ export default function AcademyCoursePage() {
 
   useEffect(() => { loadCourse(); }, [slug]);
 
+  async function buyCourse() {
+    if (!course) return;
+    if (!userId) {
+      window.location.assign("/account?next=" + encodeURIComponent("/academy/course/" + slug));
+      return;
+    }
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/academy/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: course.id })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.authorizationUrl) throw new Error(result.error || "Unable to start course checkout.");
+      window.location.assign(result.authorizationUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to start course checkout.");
+      setBusy(false);
+    }
+  }
+
   async function enrolFree() {
     if (!userId) {
       window.location.assign("/account?next=" + encodeURIComponent("/academy/course/" + slug));
@@ -172,7 +194,7 @@ export default function AcademyCoursePage() {
       {course && <>
         <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200 bg-white">
           {course.thumbnail_url && <img src={course.thumbnail_url} alt="" className="h-56 w-full object-cover md:h-72"/>}
-          <div className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:p-9"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">NBJ Academy · {course.category}</p><h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{course.title}</h1><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{course.short_description}</p><div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-600"><span className="rounded-full bg-slate-100 px-3 py-2">{course.level.replace("_"," ")}</span><span className="rounded-full bg-slate-100 px-3 py-2">{course.language}</span><span className="rounded-full bg-slate-100 px-3 py-2">{lessons.length} available lessons</span></div></div><div className="min-w-52 rounded-2xl bg-slate-50 p-5"><p className="text-2xl font-extrabold text-slate-900">{formatPrice()}</p>{isEnrolled ? <p className="mt-2 text-sm font-bold text-emerald-700">You're enrolled</p> : <button type="button" disabled={busy || Number(course.price)!==0} onClick={enrolFree} className="mt-4 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Please wait..." : userId ? "Enrol for free" : "Sign in to enrol"}</button>}{Number(course.price)!==0 && !isEnrolled && <p className="mt-2 text-xs leading-5 text-slate-500">Paid enrolment will be available when course checkout is connected.</p>}{isEnrolled && <div className="mt-4"><div className="flex justify-between text-xs font-semibold text-slate-600"><span>Your progress</span><span>{progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-teal-600" style={{width: progress+"%"}}/></div><p className="mt-2 text-xs text-slate-500">{completedCount} of {lessons.length} lessons completed</p></div>}</div></div>
+          <div className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:p-9"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">NBJ Academy · {course.category}</p><h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{course.title}</h1><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{course.short_description}</p><div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-600"><span className="rounded-full bg-slate-100 px-3 py-2">{course.level.replace("_"," ")}</span><span className="rounded-full bg-slate-100 px-3 py-2">{course.language}</span><span className="rounded-full bg-slate-100 px-3 py-2">{lessons.length} available lessons</span></div></div><div className="min-w-52 rounded-2xl bg-slate-50 p-5"><p className="text-2xl font-extrabold text-slate-900">{formatPrice()}</p>{isEnrolled ? <p className="mt-2 text-sm font-bold text-emerald-700">You're enrolled</p> : Number(course.price) === 0 ? <button type="button" disabled={busy} onClick={enrolFree} className="mt-4 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Please wait..." : userId ? "Enrol for free" : "Sign in to enrol"}</button> : <button type="button" disabled={busy} onClick={buyCourse} className="mt-4 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Preparing checkout..." : userId ? "Buy course" : "Sign in to purchase"}</button>}{isEnrolled && <div className="mt-4"><div className="flex justify-between text-xs font-semibold text-slate-600"><span>Your progress</span><span>{progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-teal-600" style={{width: progress+"%"}}/></div><p className="mt-2 text-xs text-slate-500">{completedCount} of {lessons.length} lessons completed</p></div>}</div></div>
         </section>
         {course.description && <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-lg font-extrabold text-slate-900">About this course</h2><p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{course.description}</p></section>}
         {isEnrolled && quizzes.length>0 && <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-6"><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">Test your knowledge</p><h2 className="mt-1 text-xl font-extrabold text-slate-900">Course assessments</h2><div className="mt-4 grid gap-3 md:grid-cols-2">{quizzes.map(quiz=><article key={quiz.id} className="rounded-xl border border-slate-200 p-4"><h3 className="font-bold text-slate-900">{quiz.title}</h3><p className="mt-1 text-xs text-slate-500">Pass mark: {quiz.pass_mark}%</p>{quiz.instructions&&<p className="mt-2 text-sm text-slate-600">{quiz.instructions}</p>}<Link href={"/academy/quiz/"+quiz.id} className="mt-4 inline-flex rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-bold text-white">Take assessment</Link></article>)}</div></section>}
