@@ -66,7 +66,7 @@ export default function AcademyInstructorRevenuePage() {
   return <main className="min-h-screen bg-[#F5F7F8] px-5 py-10"><div className="mx-auto max-w-6xl">
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div><Link href="/academy/instructor" className="text-sm font-bold text-teal-700">← Instructor Centre</Link><p className="mt-4 text-xs font-bold uppercase tracking-[.2em] text-teal-700">NBJ Academy · Instructor finance</p><h1 className="mt-2 text-3xl font-extrabold text-slate-900">Course revenue</h1><p className="mt-2 text-sm text-slate-600">Review paid enrolments and payment activity across your courses.</p></div>
-      <Link href="/academy/instructor" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">Manage courses</Link>
+      <div className="flex flex-wrap gap-2"><Link href="/academy/instructor/payouts" className="rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white">Earnings & payouts</Link><Link href="/academy/instructor" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">Manage courses</Link></div>
     </header>
     {error && <p role="alert" className="mt-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
     <section className="mt-7 grid gap-4 sm:grid-cols-3">
@@ -84,6 +84,6 @@ export default function AcademyInstructorRevenuePage() {
       {payments.length === 0 ? <p className="mt-5 rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">Payment records will appear here when students purchase your courses.</p> :
         <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead><tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><th className="px-3 py-3">Course</th><th className="px-3 py-3">Reference</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Date</th><th className="px-3 py-3">Status</th></tr></thead><tbody>{payments.map(payment=><tr key={payment.id} className="border-b border-slate-100"><td className="px-3 py-4 font-semibold text-slate-800">{courseNames[payment.course_id] ?? "Course"}</td><td className="px-3 py-4 font-mono text-xs text-slate-500">{payment.reference}</td><td className="px-3 py-4 font-semibold text-slate-800">{payment.currency} {Number(payment.amount).toFixed(2)}</td><td className="px-3 py-4 text-slate-500">{new Date(payment.created_at).toLocaleDateString()}</td><td className="px-3 py-4"><span className={"rounded-full px-3 py-1.5 text-xs font-bold capitalize "+(payment.status==="paid"?"bg-emerald-50 text-emerald-700":payment.status==="pending"?"bg-amber-50 text-amber-800":"bg-rose-50 text-rose-700")}>{payment.status}</span></td></tr>)}</tbody></table></div>}
     </section>
-    <p className="mt-5 text-xs leading-5 text-slate-500">This report displays gross paid transactions only. Platform fees, instructor balances, withdrawals and actual bank or mobile-money payouts will be added in a separate finance phase.</p>
+    <p className="mt-5 text-xs leading-5 text-slate-500">This report displays gross paid transactions. Review your earnings and submit payout requests from Earnings & payouts; transfers remain subject to finance review.</p>
   </div></main>;
 }
