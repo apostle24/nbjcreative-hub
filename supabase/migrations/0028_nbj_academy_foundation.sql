@@ -104,7 +104,12 @@ drop policy if exists "Preview lessons or enrolled lesson titles are visible" on
 create policy "Preview lessons or enrolled lesson titles are visible"
   on public.academy_lessons for select
   using (
-    is_preview
+    exists (
+      select 1
+      from public.academy_sections s
+      join public.academy_courses c on c.id = s.course_id
+      where s.id = section_id and c.status = 'published' and is_preview
+    )
     or exists (
       select 1
       from public.academy_sections s
