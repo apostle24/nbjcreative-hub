@@ -65,28 +65,28 @@ export default function AdminVendorsPage() {
     setBusyId(vendor.id);
     setError("");
     setNotice("");
-    const supabase = createClient();
     try {
-      const { data: updated, error: updateError } = await supabase
-        .from("vendor_profiles")
-        .update({
+      const response = await fetch("/api/admin/vendors/review", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vendorId: vendor.id,
           status,
-          review_note: notes[vendor.id]?.trim() || null,
-          reviewed_at: new Date().toISOString()
+          reviewNote: notes[vendor.id]?.trim() || ""
         })
-        .eq("id", vendor.id)
-        .select("id,status,review_note,reviewed_at")
-        .single();
-
-      if (updateError) throw updateError;
-      if (!updated || updated.status !== status) {
-        throw new Error("The database did not confirm the requested status change.");
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "The server could not save this decision.");
+      }
+      const updated = result.vendor as Pick<Vendor, "id" | "status" | "review_note" | "reviewed_at">;
+      if (!updated || updated.id !== vendor.id || updated.status !== status) {
+        throw new Error("The server did not confirm the requested status change.");
       }
 
-      // Update the visible record immediately, then show the matching status filter.
       setVendors(current => current.map(item =>
         item.id === vendor.id
-          ? { ...item, status: updated.status as Vendor["status"], review_note: updated.review_note, reviewed_at: updated.reviewed_at }
+          ? { ...item, status: updated.status, review_note: updated.review_note, reviewed_at: updated.reviewed_at }
           : item
       ));
       setFilter(status);
