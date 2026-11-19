@@ -113,6 +113,7 @@ export default function AdminDashboardPage() {
       if (insertError || !data) { setError(insertError?.message || "Product could not be created."); setBusy(false); return; }
       productId = data.id;
     }
+    if (!productId) { setError("Product could not be saved. Please try again."); setBusy(false); return; }
     if (coverFile && productId) {
       const safeName = coverFile.name.replace(/[^a-zA-Z0-9._-]/g,"-");
       const path = productId + "/" + crypto.randomUUID() + "-" + safeName;
