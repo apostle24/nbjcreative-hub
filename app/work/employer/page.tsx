@@ -269,7 +269,7 @@ export default function WorkEmployerPage() {
               <textarea rows={3} maxLength={2000} value={applicantNote} onChange={e => setApplicantNote(e.target.value)} placeholder="Add context that may help our review." className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"/>
             </label>
             {verification?.status === "rejected" && <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-800">Your previous request was not approved. You may submit updated information and evidence.</p>}
-            <button disabled={busy} className="rounded-xl bg-teal-700 px-6 py-3.5 text-sm font-bold text-white hover:bg-teal-800 disabled:opacity-60">{busy ? "Submitting..." : verification?.status === "rejected" ? "Resubmit for verification" : "Submit for verification"}</button>
+            <div className="sticky bottom-3 z-20 rounded-2xl border border-teal-200 bg-white/95 p-3 shadow-xl backdrop-blur-sm"><button type="submit" disabled={busy} className="!flex !min-h-14 !w-full !items-center !justify-center rounded-xl !bg-teal-700 px-6 py-4 text-base font-extrabold !text-white shadow-md hover:!bg-teal-800 disabled:!cursor-not-allowed disabled:!opacity-60">{busy ? "Submitting verification..." : verification?.status === "rejected" ? "Resubmit for verification" : "Submit for verification"}</button><p className="mt-2 text-center text-xs text-slate-500">Review your details, attach your document, then submit.</p></div>
           </form>}
         </section>}
         {error && <p role="alert" className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
