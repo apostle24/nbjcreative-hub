@@ -13,7 +13,7 @@ type Course = {
 };
 type Lesson = {
   id: string; section_id: string; title: string; description: string;
-  content: string; video_url: string | null; duration_minutes: number;
+  content: string; video_url: string | null; attachment_path?: string | null; attachment_name?: string | null; attachment_url?: string | null; duration_minutes: number;
   is_preview: boolean; sort_order: number;
 };
 type Section = { id: string; title: string; description: string; sort_order: number; lessons: Lesson[]; };
@@ -77,11 +77,16 @@ export default function AcademyCoursePage() {
     let lessonData: Lesson[] = [];
     if (base.length) {
       const { data, error: lessonError } = await supabase.from("academy_lessons")
-        .select("id,section_id,title,description,content,video_url,duration_minutes,is_preview,sort_order")
+        .select("id,section_id,title,description,content,video_url,attachment_path,attachment_name,duration_minutes,is_preview,sort_order")
         .in("section_id", base.map(section => section.id))
         .order("sort_order", { ascending: true });
       if (lessonError) { setError("We couldn't load the available lessons."); setLoading(false); return; }
       lessonData = (data ?? []) as Lesson[];
+      lessonData = await Promise.all(lessonData.map(async lesson => {
+        if (!lesson.attachment_path || !(currentEnrollment?.status === "active" || lesson.is_preview)) return lesson;
+        const { data: signed } = await supabase.storage.from("academy-materials").createSignedUrl(lesson.attachment_path, 3600);
+        return { ...lesson, attachment_url: signed?.signedUrl ?? null };
+      }));
     }
     const assembled = base.map(section => ({
       ...section, lessons: lessonData.filter(lesson => lesson.section_id === section.id)
@@ -219,6 +224,7 @@ export default function AcademyCoursePage() {
               <p className="text-xs font-semibold text-slate-500">{selectedLesson.duration_minutes} minutes {selectedLesson.is_preview ? "· Preview lesson" : ""}</p>
               {selectedLesson.description && <p className="mt-3 text-sm font-semibold text-slate-700">{selectedLesson.description}</p>}
               {selectedLesson.content ? <div className="mt-5 whitespace-pre-wrap text-sm leading-7 text-slate-700">{selectedLesson.content}</div> : <p className="mt-5 text-sm text-slate-500">The instructor has not added written notes for this lesson.</p>}
+              {selectedLesson.attachment_url && <a href={selectedLesson.attachment_url} target="_blank" rel="noreferrer" className="mt-5 inline-flex rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-bold text-teal-800">Download lesson material: {selectedLesson.attachment_name || "Open file"} ↗</a>}
               {!isEnrolled && !selectedLesson.is_preview && <div className="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Enrol in this course to unlock this lesson and track your progress.</div>}
             </div> : <p className="mt-5 text-sm text-slate-500">The instructor is preparing the course lessons. Please check back soon.</p>}
           </div>
