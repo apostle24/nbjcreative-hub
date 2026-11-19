@@ -24,6 +24,13 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [added, setAdded] = useState(false);
+  const [reviews, setReviews] = useState<Array<{id:string;rating:number;title:string;body:string;created_at:string}>>([]);
+  const [rating, setRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewBody, setReviewBody] = useState("");
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -36,13 +43,37 @@ export default function ProductPage() {
         .eq("status", "published")
         .maybeSingle();
       if (mounted) {
-        if (!error && data) setProduct(data as unknown as Product);
+        if (!error && data) {
+          setProduct(data as unknown as Product);
+          const { data: reviewRows } = await supabase.from("product_reviews").select("id,rating,title,body,created_at").eq("product_id", data.id).eq("status", "published").order("created_at", { ascending: false });
+          if (mounted) setReviews((reviewRows ?? []) as typeof reviews);
+        }
         setLoading(false);
       }
     }
     loadProduct();
     return () => { mounted = false; };
   }, [params.slug]);
+
+  async function submitReview(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setReviewBusy(true); setReviewError(""); setReviewMessage("");
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      window.location.assign("/account?next=" + encodeURIComponent("/products/" + params.slug));
+      return;
+    }
+    const { error } = await supabase.rpc("submit_product_review", {
+      p_product_id: product?.id, p_rating: rating, p_title: reviewTitle, p_body: reviewBody
+    });
+    if (error) setReviewError(error.message);
+    else {
+      setReviewMessage("Thank you. Your review has been submitted and is awaiting moderation.");
+      setReviewTitle(""); setReviewBody(""); setRating(5);
+    }
+    setReviewBusy(false);
+  }
 
   const coverUrl = product?.cover_image_path ? createClient().storage.from("product-covers").getPublicUrl(product.cover_image_path).data.publicUrl : null;
   const formatPrice = (price: number | string, currency: string) =>
@@ -60,6 +91,28 @@ export default function ProductPage() {
           <div className="mt-8 flex flex-wrap gap-3"><button onClick={() => { addToCart(product.id); setAdded(true); }} className="inline-flex items-center justify-center gap-2 rounded-full bg-teal px-8 py-4 text-sm font-bold text-white hover:bg-[#11696d]"><ShoppingBag size={17}/>{added ? "Added to cart" : "Add to cart"}</button><Link href="/cart" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-7 py-4 text-sm font-bold text-ink hover:border-teal">View cart</Link></div>
           <p className="mt-3 text-xs text-slate-400">Your cart is ready. Secure checkout and payment will be activated in the next stage.</p>
           <div className="mt-10 border-t border-slate-200 pt-7"><h2 className="text-lg font-bold text-ink">Product details</h2><p className="mt-4 text-sm leading-7 text-slate-600">{product.description || product.summary || "More product information will be available soon."}</p></div>
+          <section className="mt-10 border-t border-slate-200 pt-7">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div><h2 className="text-lg font-bold text-ink">Customer reviews</h2><p className="mt-1 text-xs text-slate-500">{reviews.length} published review{reviews.length === 1 ? "" : "s"}</p></div>
+              {reviews.length > 0 && <p className="text-sm font-bold text-amber-600">★ {(reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length).toFixed(1)} / 5</p>}
+            </div>
+            <div className="mt-4 space-y-3">
+              {reviews.length === 0 ? <p className="rounded-xl bg-white p-4 text-sm text-slate-500">No published reviews yet. Be the first eligible customer to share feedback.</p> : reviews.map(review => <article key={review.id} className="rounded-xl bg-white p-4"><div className="flex items-center justify-between gap-3"><h3 className="font-bold text-ink">{review.title}</h3><span className="text-sm text-amber-600">{"★".repeat(review.rating)}{"☆".repeat(5-review.rating)}</span></div><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{review.body}</p><p className="mt-2 text-xs text-slate-400">{new Date(review.created_at).toLocaleDateString()}</p></article>)}
+            </div>
+            <form onSubmit={submitReview} className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 className="font-bold text-ink">Write a review</h3>
+              <p className="mt-1 text-xs text-slate-500">Only customers with a completed purchase can submit a review. Reviews appear after approval.</p>
+              <label className="mt-4 block text-sm font-semibold text-slate-700">Your rating</label>
+              <select value={rating} onChange={e=>setRating(Number(e.target.value))} className="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n===1?"":"s"}</option>)}</select>
+              <label className="mt-4 block text-sm font-semibold text-slate-700">Review title</label>
+              <input required minLength={3} maxLength={120} value={reviewTitle} onChange={e=>setReviewTitle(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Summarise your experience"/>
+              <label className="mt-4 block text-sm font-semibold text-slate-700">Your review</label>
+              <textarea required minLength={10} maxLength={3000} rows={4} value={reviewBody} onChange={e=>setReviewBody(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="What did you think of this product?"/>
+              {reviewError && <p role="alert" className="mt-3 text-sm text-rose-600">{reviewError}</p>}
+              {reviewMessage && <p role="status" className="mt-3 text-sm text-teal-700">{reviewMessage}</p>}
+              <button disabled={reviewBusy} className="mt-4 rounded-full bg-teal px-6 py-3 text-sm font-bold text-white disabled:opacity-50">{reviewBusy ? "Submitting..." : "Submit review"}</button>
+            </form>
+          </section>
           <div className="mt-8 grid sm:grid-cols-2 gap-3"><div className="rounded-xl bg-white p-4 flex gap-3"><Download className="text-teal shrink-0"/><div><p className="text-sm font-bold text-ink">Digital format</p><p className="text-xs text-slate-500 mt-1">Designed for convenient access.</p></div></div><div className="rounded-xl bg-white p-4 flex gap-3"><ShieldCheck className="text-teal shrink-0"/><div><p className="text-sm font-bold text-ink">Clear product details</p><p className="text-xs text-slate-500 mt-1">Know what's included before buying.</p></div></div></div>
         </div>
       </div>
