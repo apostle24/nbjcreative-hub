@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Download, ShieldCheck, ShoppingBag, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Download, ShieldCheck, ShoppingBag, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { addToCart } from "@/lib/cart";
 
@@ -24,6 +24,9 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [added, setAdded] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [wishlistBusy, setWishlistBusy] = useState(false);
+  const [wishlistMessage, setWishlistMessage] = useState("");
   const [reviews, setReviews] = useState<Array<{id:string;rating:number;title:string;body:string;created_at:string}>>([]);
   const [rating, setRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState("");
@@ -45,6 +48,11 @@ export default function ProductPage() {
       if (mounted) {
         if (!error && data) {
           setProduct(data as unknown as Product);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: saved } = await supabase.from("wishlist_items").select("id").eq("customer_id", user.id).eq("product_id", data.id).maybeSingle();
+            if (mounted) setIsSaved(Boolean(saved));
+          }
           const { data: reviewRows } = await supabase.from("product_reviews").select("id,rating,title,body,created_at").eq("product_id", data.id).eq("status", "published").order("created_at", { ascending: false });
           if (mounted) setReviews((reviewRows ?? []) as typeof reviews);
         }
@@ -54,6 +62,28 @@ export default function ProductPage() {
     loadProduct();
     return () => { mounted = false; };
   }, [params.slug]);
+
+  async function toggleWishlist() {
+    if (!product || wishlistBusy) return;
+    setWishlistBusy(true);
+    setWishlistMessage("");
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      window.location.assign("/account?next=" + encodeURIComponent("/products/" + params.slug));
+      return;
+    }
+    if (isSaved) {
+      const { error } = await supabase.from("wishlist_items").delete().eq("customer_id", user.id).eq("product_id", product.id);
+      if (error) setWishlistMessage("We couldn't remove this product. Please try again.");
+      else setIsSaved(false);
+    } else {
+      const { error } = await supabase.from("wishlist_items").insert({ customer_id: user.id, product_id: product.id });
+      if (error && error.code !== "23505") setWishlistMessage("We couldn't save this product. Please try again.");
+      else setIsSaved(true);
+    }
+    setWishlistBusy(false);
+  }
 
   async function submitReview(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,7 +118,7 @@ export default function ProductPage() {
       <div className="grid lg:grid-cols-2 gap-12 items-start">
         <div className="rounded-[28px] bg-gradient-to-br from-[#DDECE9] to-white min-h-[380px] overflow-hidden grid place-items-center shadow-soft">{coverUrl ? <img src={coverUrl} alt={product.title} className="h-full min-h-[380px] w-full object-cover"/> : <span className="text-[130px] text-ink/70">▤</span>}</div>
         <div className="pt-2"><p className="eyebrow">{product.category?.name ?? "Digital product"} · Digital product</p><h1 className="mt-4 text-4xl md:text-5xl font-extrabold tracking-[-.05em] leading-tight text-ink">{product.title}</h1><p className="mt-6 text-base leading-7 text-slate-600">{product.description || product.summary}</p><div className="mt-7 flex items-center gap-4"><span className="text-3xl font-extrabold text-ink">{formatPrice(product.price, product.currency)}</span><span className="rounded-full bg-[#E2F1EE] px-3 py-1.5 text-xs font-bold text-teal">Available</span></div>
-          <div className="mt-8 flex flex-wrap gap-3"><button onClick={() => { addToCart(product.id); setAdded(true); }} className="inline-flex items-center justify-center gap-2 rounded-full bg-teal px-8 py-4 text-sm font-bold text-white hover:bg-[#11696d]"><ShoppingBag size={17}/>{added ? "Added to cart" : "Add to cart"}</button><Link href="/cart" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-7 py-4 text-sm font-bold text-ink hover:border-teal">View cart</Link></div>
+          <div className="mt-8 flex flex-wrap gap-3"><button onClick={() => { addToCart(product.id); setAdded(true); }} className="inline-flex items-center justify-center gap-2 rounded-full bg-teal px-8 py-4 text-sm font-bold text-white hover:bg-[#11696d]"><ShoppingBag size={17}/>{added ? "Added to cart" : "Add to cart"}</button><Link href="/cart" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-7 py-4 text-sm font-bold text-ink hover:border-teal">View cart</Link><button type="button" onClick={toggleWishlist} disabled={wishlistBusy} className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-4 text-sm font-bold text-ink hover:border-teal disabled:opacity-50"><Heart size={17} className={isSaved ? "fill-rose-500 text-rose-500" : ""}/>{wishlistBusy ? "Saving..." : isSaved ? "Saved" : "Save for later"}</button></div>{wishlistMessage && <p role="status" className="mt-3 text-xs text-rose-600">{wishlistMessage}</p>}
           <p className="mt-3 text-xs text-slate-400">Your cart is ready. Secure checkout and payment will be activated in the next stage.</p>
           <div className="mt-10 border-t border-slate-200 pt-7"><h2 className="text-lg font-bold text-ink">Product details</h2><p className="mt-4 text-sm leading-7 text-slate-600">{product.description || product.summary || "More product information will be available soon."}</p></div>
           <section className="mt-10 border-t border-slate-200 pt-7">
