@@ -25,6 +25,35 @@ export async function POST(request: Request) {
 
     const payment = result.data;
     const metadata = payment.metadata || {};
+
+    if (metadata.payment_type === "academy_course") {
+      const academyReference = typeof metadata.academy_reference === "string" ? metadata.academy_reference : "";
+      if (payment.status !== "success" || !academyReference || metadata.student_id !== user.id) {
+        return NextResponse.json({ error: "This payment does not match your Academy checkout." }, { status: 409 });
+      }
+      const admin = createAdminClient();
+      const { data: transaction, error: transactionError } = await admin.from("academy_payment_transactions")
+        .select("reference,student_id,course_id")
+        .eq("reference", academyReference).eq("student_id", user.id).maybeSingle();
+      if (transactionError || !transaction || transaction.course_id !== metadata.course_id) {
+        return NextResponse.json({ error: "The payment does not match a course purchase in your account." }, { status: 404 });
+      }
+      const { data, error } = await admin.rpc("fulfill_academy_course_payment", {
+        p_reference: academyReference,
+        p_transaction_id: String(payment.id),
+        p_amount_subunits: Number(payment.amount),
+        p_currency: String(payment.currency)
+      });
+      if (error || !data?.[0]) {
+        return NextResponse.json({ error: "Payment was verified, but course access could not be activated. Please contact support." }, { status: 500 });
+      }
+      return NextResponse.json({
+        ok: true,
+        type: "academy",
+        courseSlug: data[0].course_slug,
+        alreadyPaid: data[0].already_paid
+      });
+    }
     const orderReference = typeof metadata.order_reference === "string" ? metadata.order_reference : "";
     if (payment.status !== "success" || !orderReference) {
       return NextResponse.json({ error: "Payment is not successful yet. Your order remains unpaid." }, { status: 409 });
