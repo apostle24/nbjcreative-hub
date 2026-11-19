@@ -54,6 +54,8 @@ export default function VendorSalesPage() {
 
   const paid = useMemo(() => sales.filter(s => s.payment_status === "paid"), [sales]);
   const pending = useMemo(() => sales.filter(s => s.payment_status === "pending"), [sales]);
+  const paidOrderCount = useMemo(() => new Set(paid.map(s => s.order_reference)).size, [paid]);
+  const pendingOrderCount = useMemo(() => new Set(pending.map(s => s.order_reference)).size, [pending]);
   const unitsSold = useMemo(() => paid.reduce((sum, s) => sum + Number(s.quantity), 0), [paid]);
   const revenueByCurrency = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -77,8 +79,8 @@ export default function VendorSalesPage() {
       {error && <p role="alert" className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
       {!error && <>
         <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold text-slate-500">Paid orders</p><p className="mt-2 text-3xl font-extrabold text-slate-900">{paid.length}</p></article>
-          <article className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold text-slate-500">Pending orders</p><p className="mt-2 text-3xl font-extrabold text-slate-900">{pending.length}</p></article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold text-slate-500">Paid orders</p><p className="mt-2 text-3xl font-extrabold text-slate-900">{paidOrderCount}</p></article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold text-slate-500">Pending orders</p><p className="mt-2 text-3xl font-extrabold text-slate-900">{pendingOrderCount}</p></article>
           <article className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold text-slate-500">Units sold</p><p className="mt-2 text-3xl font-extrabold text-slate-900">{unitsSold}</p></article>
           <article className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold text-slate-500">Sales revenue</p><div className="mt-2 space-y-1">{Object.keys(revenueByCurrency).length ? Object.entries(revenueByCurrency).map(([currency,total])=><p key={currency} className="text-xl font-extrabold text-slate-900">{money(total,currency)}</p>) : <p className="text-3xl font-extrabold text-slate-900">—</p>}</div></article>
         </div>
