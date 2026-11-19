@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { ArrowRight, Search, ShoppingBag, Menu, X, Sparkles, Download, ShieldCheck, Globe2, ChevronRight } from "lucide-react";
 
@@ -15,18 +16,83 @@ const categories = [
   { name: "Faith", detail: "Resources for spiritual growth", icon: "✧", color: "bg-[#F8F1E6]", count: "Devotionals, journals & ministry resources" }
 ];
 
-const products = [
-  { id: 1, name: "Freelancer Client-to-Payment System", category: "Business", type: "Complete toolkit", price: "$19", old: "$29", tag: "FOUNDING EDITION", art: "🗂️", bg: "from-[#DDECE9] to-[#F3F7F4]", description: "A coordinated workflow for enquiries, proposals, project scope, approvals and getting paid." },
-  { id: 2, name: "The Complete Brand Starter Kit", category: "Design & Creative", type: "Editable templates", price: "$15", old: "", tag: "COMING SOON", art: "✳", bg: "from-[#EAE2F4] to-[#F8F4FB]", description: "A practical set of brand planning and visual identity templates for small businesses." },
-  { id: 3, name: "Website Launch Checklist", category: "Technology", type: "PDF + checklist", price: "$9", old: "", tag: "COMING SOON", art: "⌘", bg: "from-[#DCE8F5] to-[#F2F6FB]", description: "A structured checklist to plan, test and launch a professional website." },
-  { id: 4, name: "Career-Ready CV & Portfolio Pack", category: "Career", type: "Editable documents", price: "$12", old: "", tag: "COMING SOON", art: "▤", bg: "from-[#F8EAD9] to-[#FCF7F0]", description: "Clear, professional templates for presenting your experience and work." }
+type Category = { id: string; name: string; slug: string; description: string | null; sort_order: number };
+type CatalogueProduct = {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string | null;
+  description: string | null;
+  price: number | string;
+  currency: string;
+  category: { name: string } | null;
+};
+
+const categoryPresentation = const categoryPresentation = [
+  { name: "Business", detail: "Build and grow with confidence", icon: "↗", color: "bg-[#E9F3EF]", count: "Business plans, finance tools & templates" },
+  { name: "Design & Creative", detail: "Make your ideas stand out", icon: "✳", color: "bg-[#F3ECFA]", count: "Brand kits, graphics & presentation assets" },
+  { name: "Technology", detail: "Tools for builders and creators", icon: "⌘", color: "bg-[#EAF1FA]", count: "Code, website templates & developer resources" },
+  { name: "Education", detail: "Learn something that moves you forward", icon: "▤", color: "bg-[#FFF3E7]", count: "Guides, workbooks & learning resources" },
+  { name: "Career", detail: "Take your next professional step", icon: "◎", color: "bg-[#E8F4F5]", count: "CVs, portfolios & interview resources" },
+  { name: "Lifestyle", detail: "Make everyday life work better", icon: "♡", color: "bg-[#FCEEF0]", count: "Planners, journals & trackers" },
+  { name: "Media & Assets", detail: "Creative assets for your projects", icon: "▶", color: "bg-[#F0F1F5]", count: "Photos, video, audio & digital art" },
+  { name: "Faith", detail: "Resources for spiritual growth", icon: "✧", color: "bg-[#F8F1E6]", count: "Devotionals, journals & ministry resources" }
 ];
+
+
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState("All");
   const [menuOpen, setMenuOpen] = useState(false);
-  const visibleProducts = useMemo(() => products.filter(p => (active === "All" || p.category === active) && (p.name + p.category + p.description).toLowerCase().includes(query.toLowerCase())), [active, query]);
+  const [products, setProducts] = useState<CatalogueProduct[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [catalogueError, setCatalogueError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadCatalogue() {
+      try {
+        const supabase = createClient();
+        const [categoryResult, productResult] = await Promise.all([
+          supabase.from("categories").select("id,name,slug,description,sort_order").eq("is_active", true).order("sort_order"),
+          supabase.from("products").select("id,title,slug,summary,description,price,currency,featured,category:categories(name)").eq("status", "published").order("created_at", { ascending: false })
+        ]);
+        if (categoryResult.error) throw categoryResult.error;
+        if (productResult.error) throw productResult.error;
+        if (mounted) {
+          setCategories((categoryResult.data ?? []) as Category[]);
+          setProducts((productResult.data ?? []) as unknown as CatalogueProduct[]);
+        }
+      } catch {
+        if (mounted) setCatalogueError("We couldn't load the shop right now. Please refresh the page.");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    loadCatalogue();
+    return () => { mounted = false; };
+  }, []);
+
+  const visibleCategories = categories.map(category => {
+    const presentation = categoryPresentation.find(item => item.name === category.name);
+    return {
+      ...presentation,
+      ...category,
+      detail: presentation?.detail ?? category.description ?? "",
+      icon: presentation?.icon ?? "◇",
+      color: presentation?.color ?? "bg-[#F0F1F5]",
+      count: presentation?.count ?? "Explore digital resources"
+    };
+  });
+  const visibleProducts = useMemo(() => products.filter(p => {
+    const categoryName = p.category?.name ?? "";
+    return (active === "All" || categoryName === active) &&
+      (p.title + categoryName + (p.summary ?? "") + (p.description ?? "")).toLowerCase().includes(query.toLowerCase());
+  }), [products, active, query]);
+  const formatPrice = (price: number | string, currency: string) =>
+    new Intl.NumberFormat("en", { style: "currency", currency }).format(Number(price));
 
   return <main>
     <div className="bg-ink text-white text-center text-xs py-2.5 px-4">Thoughtful digital resources for the way you work, create and grow. <span className="text-teal-200 font-semibold">Explore the collection →</span></div>
@@ -76,7 +142,7 @@ export default function Home() {
     <section id="categories" className="container py-20">
       <div className="flex flex-wrap justify-between items-end gap-5 mb-9"><div><p className="eyebrow mb-3">Explore the collection</p><h2 className="section-title">Find the right tools for<br className="hidden sm:block"/> your next step.</h2></div><a href="#shop" className="text-sm font-bold text-teal">View all products <ArrowRight size={15} className="inline ml-1"/></a></div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {categories.map((c) => <button key={c.name} onClick={()=>{setActive(c.name);document.getElementById("shop")?.scrollIntoView({behavior:"smooth"});}} className="group rounded-2xl border border-slate-100 bg-white p-5 text-left hover:border-teal/40 hover:shadow-soft transition-all">
+        {visibleCategories.map((c) => <button key={c.name} onClick={()=>{setActive(c.name);document.getElementById("shop")?.scrollIntoView({behavior:"smooth"});}} className="group rounded-2xl border border-slate-100 bg-white p-5 text-left hover:border-teal/40 hover:shadow-soft transition-all">
           <div className={`w-12 h-12 rounded-xl ${c.color} grid place-items-center text-2xl text-ink mb-5`}>{c.icon}</div><h3 className="font-bold text-ink">{c.name}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{c.count}</p><div className="mt-5 flex items-center justify-between text-[11px] font-bold text-teal"><span>Explore department</span><ChevronRight size={15} className="group-hover:translate-x-1 transition-transform"/></div>
         </button>)}
       </div>
@@ -85,15 +151,17 @@ export default function Home() {
     <section id="shop" className="bg-mist py-20">
       <div className="container">
         <div className="flex flex-wrap justify-between items-end gap-5 mb-8"><div><p className="eyebrow mb-3">The digital shop</p><h2 className="section-title">Resources worth keeping.</h2><p className="mt-3 text-sm text-slate-500">A growing collection of tools made to be useful.</p></div><div className="relative w-full sm:w-[280px]"><Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search digital products..." className="w-full rounded-full border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm outline-none focus:border-teal"/></div></div>
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-5">{["All",...categories.map(c=>c.name)].map(c=><button key={c} onClick={()=>setActive(c)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${active===c?"bg-ink text-white":"bg-white text-slate-600 border border-slate-200 hover:border-teal"}`}>{c}</button>)}</div>
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-5">{["All",...visibleCategories.map(c=>c.name)].map(c=><button key={c} onClick={()=>setActive(c)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${active===c?"bg-ink text-white":"bg-white text-slate-600 border border-slate-200 hover:border-teal"}`}>{c}</button>)}</div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {visibleProducts.map(p=><article key={p.id} className="product-card overflow-hidden rounded-2xl border border-slate-100 bg-white">
-            <div className={`relative h-48 bg-gradient-to-br ${p.bg} flex items-center justify-center`}><span className="text-[76px] text-ink/80">{p.art}</span><span className="absolute top-4 left-4 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-extrabold tracking-wider text-teal">{p.tag}</span></div>
-            <div className="p-5"><p className="text-[10px] uppercase tracking-widest font-bold text-teal">{p.category} · {p.type}</p><h3 className="mt-2 min-h-[48px] font-bold leading-6 text-ink">{p.name}</h3><p className="mt-2 min-h-[58px] text-xs leading-5 text-slate-500">{p.description}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><div><strong className="text-lg text-ink">{p.price}</strong>{p.old && <span className="ml-2 text-xs text-slate-400 line-through">{p.old}</span>}</div><Link href={`/products/${({1:"freelancer-client-to-payment-system",2:"complete-brand-starter-kit",3:"website-launch-checklist",4:"career-ready-cv-portfolio-pack"} as Record<number,string>)[p.id]}`} className="rounded-full bg-ink px-4 py-2.5 text-[11px] font-bold text-white hover:bg-teal">{p.tag==="COMING SOON"?"View details":"View product"}</Link></div></div>
+            <div className="relative h-48 bg-gradient-to-br from-[#DDECE9] to-[#F3F7F4] flex items-center justify-center"><span className="text-[76px] text-ink/80">▤</span><span className="absolute top-4 left-4 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-extrabold tracking-wider text-teal">AVAILABLE</span></div>
+            <div className="p-5"><p className="text-[10px] uppercase tracking-widest font-bold text-teal">{p.category?.name ?? "Digital product"}</p><h3 className="mt-2 min-h-[48px] font-bold leading-6 text-ink">{p.title}</h3><p className="mt-2 min-h-[58px] text-xs leading-5 text-slate-500">{p.summary || p.description || "A practical digital resource designed to help you move forward."}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><strong className="text-lg text-ink">{formatPrice(p.price, p.currency)}</strong><Link href={`/products/${p.slug}`} className="rounded-full bg-ink px-4 py-2.5 text-[11px] font-bold text-white hover:bg-teal">View product</Link></div></div>
           </article>)}
         </div>
-        {visibleProducts.length===0 && <div className="rounded-2xl bg-white p-12 text-center text-sm text-slate-500">No products match that search yet. Try another category or keyword.</div>}
-        <p className="mt-6 text-center text-[11px] text-slate-400">Product previews and launch pricing are illustrative. Checkout is not yet enabled.</p>
+        {loading && <div className="rounded-2xl bg-white p-12 text-center text-sm text-slate-500">Loading products...</div>}
+        {!loading && catalogueError && <div className="rounded-2xl bg-white p-12 text-center text-sm text-rose-600">{catalogueError}</div>}
+        {!loading && !catalogueError && visibleProducts.length===0 && <div className="rounded-2xl bg-white p-12 text-center text-sm text-slate-500">{products.length === 0 ? "Our digital collection is being prepared. Please check back soon." : "No products match that search yet. Try another category or keyword."}</div>}
+        <p className="mt-6 text-center text-[11px] text-slate-400">Products shown here are published in the NBJCreative Hub catalogue. Checkout will be connected in a later step.</p>
       </div>
     </section>
 
