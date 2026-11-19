@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { ArrowRight, Search, ShoppingBag, Menu, X, Sparkles, Download, ShieldCheck, Globe2, ChevronRight } from "lucide-react";
 
-const categories = [
+const categoryPresentation = [
   { name: "Business", detail: "Build and grow with confidence", icon: "↗", color: "bg-[#E9F3EF]", count: "Business plans, finance tools & templates" },
   { name: "Design & Creative", detail: "Make your ideas stand out", icon: "✳", color: "bg-[#F3ECFA]", count: "Brand kits, graphics & presentation assets" },
   { name: "Technology", detail: "Tools for builders and creators", icon: "⌘", color: "bg-[#EAF1FA]", count: "Code, website templates & developer resources" },
@@ -27,19 +27,6 @@ type CatalogueProduct = {
   currency: string;
   category: { name: string } | null;
 };
-
-const categoryPresentation = const categoryPresentation = [
-  { name: "Business", detail: "Build and grow with confidence", icon: "↗", color: "bg-[#E9F3EF]", count: "Business plans, finance tools & templates" },
-  { name: "Design & Creative", detail: "Make your ideas stand out", icon: "✳", color: "bg-[#F3ECFA]", count: "Brand kits, graphics & presentation assets" },
-  { name: "Technology", detail: "Tools for builders and creators", icon: "⌘", color: "bg-[#EAF1FA]", count: "Code, website templates & developer resources" },
-  { name: "Education", detail: "Learn something that moves you forward", icon: "▤", color: "bg-[#FFF3E7]", count: "Guides, workbooks & learning resources" },
-  { name: "Career", detail: "Take your next professional step", icon: "◎", color: "bg-[#E8F4F5]", count: "CVs, portfolios & interview resources" },
-  { name: "Lifestyle", detail: "Make everyday life work better", icon: "♡", color: "bg-[#FCEEF0]", count: "Planners, journals & trackers" },
-  { name: "Media & Assets", detail: "Creative assets for your projects", icon: "▶", color: "bg-[#F0F1F5]", count: "Photos, video, audio & digital art" },
-  { name: "Faith", detail: "Resources for spiritual growth", icon: "✧", color: "bg-[#F8F1E6]", count: "Devotionals, journals & ministry resources" }
-];
-
-
 
 export default function Home() {
   const [query, setQuery] = useState("");
