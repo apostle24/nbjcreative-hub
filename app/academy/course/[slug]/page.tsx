@@ -18,6 +18,7 @@ type Lesson = {
 };
 type Section = { id: string; title: string; description: string; sort_order: number; lessons: Lesson[]; };
 type Enrollment = { id: string; status: string; };
+type Quiz = { id: string; title: string; instructions: string; pass_mark: number; };
 
 export default function AcademyCoursePage() {
   const params = useParams<{ slug: string }>();
@@ -26,6 +27,7 @@ export default function AcademyCoursePage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [completed, setCompleted] = useState<string[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState("");
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,11 @@ export default function AcademyCoursePage() {
       const { data: progressData } = await supabase.from("academy_lesson_progress")
         .select("lesson_id").eq("enrollment_id", currentEnrollment.id);
       setCompleted((progressData ?? []).map(item => item.lesson_id));
+      const { data: quizData } = await supabase.from("academy_quizzes")
+        .select("id,title,instructions,pass_mark").eq("course_id", currentCourse.id).eq("is_published", true);
+      setQuizzes((quizData ?? []) as Quiz[]);
+    } else {
+      setQuizzes([]);
     }
     setLoading(false);
   }
@@ -149,6 +156,7 @@ export default function AcademyCoursePage() {
           <div className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:p-9"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">NBJ Academy · {course.category}</p><h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{course.title}</h1><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{course.short_description}</p><div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-600"><span className="rounded-full bg-slate-100 px-3 py-2">{course.level.replace("_"," ")}</span><span className="rounded-full bg-slate-100 px-3 py-2">{course.language}</span><span className="rounded-full bg-slate-100 px-3 py-2">{lessons.length} available lessons</span></div></div><div className="min-w-52 rounded-2xl bg-slate-50 p-5"><p className="text-2xl font-extrabold text-slate-900">{formatPrice()}</p>{isEnrolled ? <p className="mt-2 text-sm font-bold text-emerald-700">You're enrolled</p> : <button type="button" disabled={busy || Number(course.price)!==0} onClick={enrolFree} className="mt-4 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Please wait..." : userId ? "Enrol for free" : "Sign in to enrol"}</button>}{Number(course.price)!==0 && !isEnrolled && <p className="mt-2 text-xs leading-5 text-slate-500">Paid enrolment will be available when course checkout is connected.</p>}{isEnrolled && <div className="mt-4"><div className="flex justify-between text-xs font-semibold text-slate-600"><span>Your progress</span><span>{progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-teal-600" style={{width: progress+"%"}}/></div><p className="mt-2 text-xs text-slate-500">{completedCount} of {lessons.length} lessons completed</p></div>}</div></div>
         </section>
         {course.description && <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-lg font-extrabold text-slate-900">About this course</h2><p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{course.description}</p></section>}
+        {isEnrolled && quizzes.length>0 && <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-6"><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">Test your knowledge</p><h2 className="mt-1 text-xl font-extrabold text-slate-900">Course assessments</h2><div className="mt-4 grid gap-3 md:grid-cols-2">{quizzes.map(quiz=><article key={quiz.id} className="rounded-xl border border-slate-200 p-4"><h3 className="font-bold text-slate-900">{quiz.title}</h3><p className="mt-1 text-xs text-slate-500">Pass mark: {quiz.pass_mark}%</p>{quiz.instructions&&<p className="mt-2 text-sm text-slate-600">{quiz.instructions}</p>}<Link href={"/academy/quiz/"+quiz.id} className="mt-4 inline-flex rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-bold text-white">Take assessment</Link></article>)}</div></section>}
         <section className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6">
             <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">Learning space</p><h2 className="mt-1 text-xl font-extrabold text-slate-900">{selectedLesson?.title ?? "Course lessons"}</h2></div>{selectedLesson && isEnrolled && <button type="button" disabled={busy} onClick={()=>toggleComplete(selectedLesson)} className={"rounded-xl px-4 py-2.5 text-xs font-bold "+(completed.includes(selectedLesson.id)?"bg-emerald-50 text-emerald-700":"bg-slate-900 text-white")}>{completed.includes(selectedLesson.id)?"Completed ✓":"Mark as complete"}</button>}</div>
