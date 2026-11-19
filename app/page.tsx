@@ -94,7 +94,7 @@ export default function Home() {
         <nav className="hidden lg:flex items-center gap-7 text-[13px] font-semibold text-slate-600">
           <a className="text-ink" href="#shop">Shop</a><a href="#categories" className="hover:text-teal">Categories</a><a href="#about" className="hover:text-teal">About</a><a href="#newsletter" className="hover:text-teal">Updates</a>
         </nav>
-        <div className="hidden md:flex items-center gap-3"><a href="#shop" className="text-sm font-semibold text-slate-600 hover:text-teal">Explore products</a><a href="#shop" className="rounded-full bg-teal px-5 py-3 text-white text-sm font-bold hover:bg-[#11696d]">Browse shop <ArrowRight size={15} className="inline ml-1"/></a></div>
+        <div className="hidden md:flex items-center gap-3"><Link href="/cart" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-teal"><ShoppingBag size={17}/> Cart</Link><a href="#shop" className="text-sm font-semibold text-slate-600 hover:text-teal">Explore products</a><a href="#shop" className="rounded-full bg-teal px-5 py-3 text-white text-sm font-bold hover:bg-[#11696d]">Browse shop <ArrowRight size={15} className="inline ml-1"/></a></div>
         <button className="lg:hidden p-2" aria-label="Toggle menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X/> : <Menu/>}</button>
       </div>
       {menuOpen && <div className="lg:hidden border-t px-5 py-4 grid gap-4 text-sm font-semibold"><a href="#shop" onClick={()=>setMenuOpen(false)}>Shop</a><a href="#categories" onClick={()=>setMenuOpen(false)}>Categories</a><a href="#about" onClick={()=>setMenuOpen(false)}>About</a></div>}
