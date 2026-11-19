@@ -113,7 +113,7 @@ export default function WorkEmployerPage() {
         <p className="mt-3 text-sm leading-6 text-slate-600">Introduce your company or organisation to people exploring opportunities on NBJ Work. You can update these details later.</p>
         {employer && <div className="mt-6 rounded-xl bg-teal-50 p-4 text-sm text-teal-900">
           <p className="font-bold">Employer profile saved</p>
-          <p className="mt-1">Your company page address: /work/company/{employer.company_slug}</p>
+          <p className="mt-1">Your public company page is ready to view.</p><Link href={"/work/company/"+employer.company_slug} className="mt-3 inline-flex font-bold underline">View public company profile →</Link>
         </div>}
         <form onSubmit={save} className="mt-7 space-y-5">
           <label className="block text-sm font-semibold text-slate-700">Company or organisation name *
