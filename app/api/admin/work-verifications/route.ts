@@ -21,7 +21,7 @@ async function getAdmin() {
 export async function GET() {
   try {
     const access = await getAdmin();
-    if (access.error) return access.error;
+    if ("error" in access) return access.error;
     const { data, error } = await access.admin
       .from("work_employer_verifications")
       .select("id,employer_id,submitted_by,organisation_type,registration_country,registration_number,evidence_storage_path,evidence_file_name,status,applicant_note,review_note,reviewed_by,reviewed_at,submitted_at,employer:work_employer_profiles(company_name,company_slug,website_url)")
@@ -64,7 +64,7 @@ export async function PATCH(request: Request) {
     const id = typeof body?.id === "string" ? body.id.trim() : "";
     const status = typeof body?.status === "string" ? body.status as Status : "";
     const reviewNote = typeof body?.reviewNote === "string" ? body.reviewNote.trim().slice(0, 2000) : "";
-    if (!UUID.test(id) || !ALLOWED.includes(status)) {
+    if (!UUID.test(id) || !ALLOWED.some(value => value === status)) {
       return NextResponse.json({ error: "A valid request and review decision are required." }, { status: 400 });
     }
 
