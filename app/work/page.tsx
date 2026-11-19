@@ -60,7 +60,7 @@ export default function WorkPage() {
   return <main className="min-h-screen bg-[#F5F7F8]">
     <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
       <Link href="/" className="text-lg font-extrabold text-slate-900">NBJCreative <span className="text-teal-700">Hub</span></Link>
-      <div className="flex gap-4 text-sm font-semibold"><Link href="/account" className="text-slate-600 hover:text-teal-700">My account</Link><Link href="/help" className="text-slate-600 hover:text-teal-700">Help</Link></div>
+      <nav className="flex flex-wrap items-center gap-4 text-sm font-semibold"><Link href="/work/talent" className="text-slate-600 hover:text-teal-700">Talent directory</Link><Link href="/work/employer" className="text-slate-600 hover:text-teal-700">For employers</Link><Link href="/account" className="text-slate-600 hover:text-teal-700">My account</Link><Link href="/help" className="text-slate-600 hover:text-teal-700">Help</Link></nav>
     </div></header>
     <section className="bg-white"><div className="mx-auto max-w-7xl px-5 py-14 md:py-20">
       <p className="text-xs font-bold uppercase tracking-[.22em] text-teal-700">NBJ Work</p>
