@@ -129,7 +129,7 @@ export default function CartPage() {
           <div className="mt-4 border-t border-slate-100 pt-4">
             {totals.map(([currency, amount]) => <div key={currency} className="mb-2 flex justify-between gap-3 text-sm"><span className="text-slate-500">Subtotal ({currency})</span><strong className="text-ink">{new Intl.NumberFormat("en", { style: "currency", currency }).format(amount)}</strong></div>)}
           </div>
-          <button disabled className="mt-6 w-full cursor-not-allowed rounded-full bg-slate-200 px-6 py-4 text-sm font-bold text-slate-500">Checkout coming next</button>
+          <Link href="/checkout" className="mt-6 block w-full rounded-full bg-teal px-6 py-4 text-center text-sm font-bold text-white hover:bg-[#11696d]">Continue to checkout</Link>
           <p className="mt-3 text-xs leading-5 text-slate-400">Your cart is saved on this device. Payments are not being collected yet.</p>
         </aside>
       </div>}
