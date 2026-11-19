@@ -147,7 +147,7 @@ export default function AcademyInstructorPage() {
           <p className="mt-1 text-xs font-bold uppercase tracking-[.2em] text-teal-700">NBJ Academy · Instructor Centre</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/academy" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">View Academy</Link>
+          <Link href="/academy/instructor/revenue" className="rounded-xl border border-teal-200 bg-white px-4 py-3 text-sm font-bold text-teal-700">Revenue</Link><Link href="/academy" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">View Academy</Link>
           <Link href="/account" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">My account</Link>
         </div>
       </header>
