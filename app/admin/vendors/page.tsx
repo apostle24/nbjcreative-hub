@@ -62,23 +62,47 @@ export default function AdminVendorsPage() {
   }, [loadVendors]);
 
   async function review(vendor: Vendor, status: Vendor["status"]) {
-    setBusyId(vendor.id); setError(""); setNotice("");
+    setBusyId(vendor.id);
+    setError("");
+    setNotice("");
     const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("vendor_profiles")
-      .update({
-        status,
-        review_note: notes[vendor.id]?.trim() || null,
-        reviewed_at: new Date().toISOString()
-      })
-      .eq("id", vendor.id);
-    if (updateError) {
-      setError("The application could not be updated: " + updateError.message);
-    } else {
-      setNotice(vendor.store_name + " has been marked " + status + ".");
-      await loadVendors();
+    try {
+      const { data: updated, error: updateError } = await supabase
+        .from("vendor_profiles")
+        .update({
+          status,
+          review_note: notes[vendor.id]?.trim() || null,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq("id", vendor.id)
+        .select("id,status,review_note,reviewed_at")
+        .single();
+
+      if (updateError) throw updateError;
+      if (!updated || updated.status !== status) {
+        throw new Error("The database did not confirm the requested status change.");
+      }
+
+      // Update the visible record immediately, then show the matching status filter.
+      setVendors(current => current.map(item =>
+        item.id === vendor.id
+          ? { ...item, status: updated.status as Vendor["status"], review_note: updated.review_note, reviewed_at: updated.reviewed_at }
+          : item
+      ));
+      setFilter(status);
+      setNotice(vendor.store_name + " is now " + status + ".");
+      try {
+        await loadVendors();
+      } catch (refreshError) {
+        setError("The status was saved, but the list could not refresh. Please use Refresh. " +
+          (refreshError instanceof Error ? refreshError.message : ""));
+      }
+    } catch (e) {
+      setError("The application status was not changed: " +
+        (e instanceof Error ? e.message : "Please try again."));
+    } finally {
+      setBusyId("");
     }
-    setBusyId("");
   }
 
   const visible = filter === "all" ? vendors : vendors.filter(v => v.status === filter);
