@@ -46,6 +46,25 @@ export async function POST(request: Request) {
     }
 
     const metadata = payment.metadata || {};
+
+    if (metadata.payment_type === "academy_course") {
+      const academyReference = typeof metadata.academy_reference === "string" ? metadata.academy_reference : "";
+      const transactionId = String(payment.id || "");
+      if (!academyReference || !transactionId || !payment.amount || !payment.currency) {
+        return NextResponse.json({ error: "Verified Academy payment is missing required details." }, { status: 400 });
+      }
+      const admin = createAdminClient();
+      const { data, error } = await admin.rpc("fulfill_academy_course_payment", {
+        p_reference: academyReference,
+        p_transaction_id: transactionId,
+        p_amount_subunits: Number(payment.amount),
+        p_currency: String(payment.currency)
+      });
+      if (error || !data?.[0]) {
+        return NextResponse.json({ error: "Verified Academy payment could not be applied." }, { status: 500 });
+      }
+      return NextResponse.json({ received: true, processed: true, type: "academy_course" });
+    }
     const orderReference = typeof metadata.order_reference === "string" ? metadata.order_reference : "";
     const transactionId = String(payment.id || "");
     const eventId = "charge.success:" + transactionId;
