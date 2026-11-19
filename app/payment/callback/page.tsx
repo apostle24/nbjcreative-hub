@@ -1,16 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 export default function PaymentCallbackPage() {
-  const params = useSearchParams();
-  const reference = params.get("reference") || "";
   const [state, setState] = useState("checking");
   const [message, setMessage] = useState("Verifying your payment securely with Paystack...");
   useEffect(() => {
     let active = true;
     async function verify() {
+      const reference = new URLSearchParams(window.location.search).get("reference") || "";
       if (!reference) { setState("error"); setMessage("No payment reference was provided."); return; }
       try {
         const response = await fetch("/api/payments/paystack/verify", {
@@ -26,7 +24,7 @@ export default function PaymentCallbackPage() {
     }
     verify();
     return () => { active = false; };
-  }, [reference]);
+  }, []);
   return <main className="min-h-screen bg-mist"><div className="container max-w-xl py-20"><section className="rounded-3xl bg-white p-8 shadow-sm">
     <p className="eyebrow">NBJCreative Hub · Payment</p>
     <h1 className="mt-3 text-3xl font-extrabold text-ink">{state === "checking" ? "Checking payment" : state === "success" ? "Payment successful" : "Payment not confirmed"}</h1>
