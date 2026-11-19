@@ -13,7 +13,7 @@ type Job = {
  workplace_type:string; location:string|null; country:string|null;
  salary_min:number|string|null; salary_max:number|string|null; currency:string;
  application_deadline:string|null; application_url:string|null; application_email:string|null;
- employer:{company_name:string;company_slug:string;description:string|null;website_url:string|null}|null;
+ employer:{company_name:string;company_slug:string;description:string|null;website_url:string|null;is_verified:boolean}|null;
 };
 
 export default function WorkOpportunityPage() {
@@ -38,7 +38,7 @@ export default function WorkOpportunityPage() {
     if (active) setCandidateDocuments((docs || []) as CandidateDocument[]);
    }
    const {data,error}=await supabase.from("work_job_posts")
-    .select("id,title,slug,description,opportunity_type,workplace_type,location,country,salary_min,salary_max,currency,application_deadline,application_url,application_email,employer:work_employer_profiles(company_name,company_slug,description,website_url)")
+    .select("id,title,slug,description,opportunity_type,workplace_type,location,country,salary_min,salary_max,currency,application_deadline,application_url,application_email,employer:work_employer_profiles(company_name,company_slug,description,website_url,is_verified)")
     .eq("slug",params.slug).eq("status","published").maybeSingle();
    if(!active)return;
    if(error || !data)setError("This opportunity is unavailable or may have closed.");
@@ -78,7 +78,7 @@ export default function WorkOpportunityPage() {
  <article className="mt-7 rounded-3xl border border-slate-200 bg-white p-7 md:p-10">
  <p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">NBJ Work opportunity</p>
  <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{job.title}</h1>
- <p className="mt-3 text-base font-semibold text-slate-600">{job.employer?.company_name??"Independent client"}</p>
+ <div className="mt-3 flex flex-wrap items-center gap-2"><p className="text-base font-semibold text-slate-600">{job.employer?.company_name??"Independent client"}</p>{job.employer?.is_verified && <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">✓ Verified Employer</span>}</div>
  <div className="mt-5 flex flex-wrap gap-3 text-xs font-semibold text-slate-600"><span className="rounded-full bg-teal-50 px-3 py-2 text-teal-800">{job.opportunity_type.replace("_"," ")}</span><span className="rounded-full bg-slate-100 px-3 py-2">{job.workplace_type}</span><span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-2"><MapPin size={13}/>{[job.location,job.country].filter(Boolean).join(", ")||"Location flexible"}</span></div>
  <p className="mt-5 text-sm font-bold text-slate-900">{compensation()}</p>
  {job.application_deadline&&<p className="mt-2 text-xs text-slate-500">Application deadline: {new Date(job.application_deadline+"T00:00:00").toLocaleDateString()}</p>}
