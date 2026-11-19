@@ -15,6 +15,7 @@ type Product = {
   price: number | string;
   currency: string;
   category: { name: string } | null;
+  cover_image_path: string | null;
 };
 
 export default function ProductPage() {
@@ -28,7 +29,7 @@ export default function ProductPage() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("products")
-        .select("id,title,slug,summary,description,price,currency,category:categories(name)")
+        .select("id,title,slug,summary,description,price,currency,cover_image_path,category:categories(name)")
         .eq("slug", params.slug)
         .eq("status", "published")
         .maybeSingle();
@@ -41,6 +42,7 @@ export default function ProductPage() {
     return () => { mounted = false; };
   }, [params.slug]);
 
+  const coverUrl = product?.cover_image_path ? createClient().storage.from("product-covers").getPublicUrl(product.cover_image_path).data.publicUrl : null;
   const formatPrice = (price: number | string, currency: string) =>
     new Intl.NumberFormat("en", { style: "currency", currency }).format(Number(price));
 
@@ -51,7 +53,7 @@ export default function ProductPage() {
     <header className="bg-white border-b border-slate-100"><div className="container h-20 flex items-center justify-between"><Link href="/" className="font-extrabold tracking-tight text-ink">NBJCreative <span className="text-teal">Hub</span></Link><Link href="/#shop" className="text-sm font-semibold text-slate-600"><ArrowLeft size={15} className="inline mr-2"/>Back to shop</Link></div></header>
     <div className="container py-12 md:py-20">
       <div className="grid lg:grid-cols-2 gap-12 items-start">
-        <div className="rounded-[28px] bg-gradient-to-br from-[#DDECE9] to-white min-h-[380px] grid place-items-center shadow-soft"><span className="text-[130px] text-ink/70">▤</span></div>
+        <div className="rounded-[28px] bg-gradient-to-br from-[#DDECE9] to-white min-h-[380px] overflow-hidden grid place-items-center shadow-soft">{coverUrl ? <img src={coverUrl} alt={product.title} className="h-full min-h-[380px] w-full object-cover"/> : <span className="text-[130px] text-ink/70">▤</span>}</div>
         <div className="pt-2"><p className="eyebrow">{product.category?.name ?? "Digital product"} · Digital product</p><h1 className="mt-4 text-4xl md:text-5xl font-extrabold tracking-[-.05em] leading-tight text-ink">{product.title}</h1><p className="mt-6 text-base leading-7 text-slate-600">{product.description || product.summary}</p><div className="mt-7 flex items-center gap-4"><span className="text-3xl font-extrabold text-ink">{formatPrice(product.price, product.currency)}</span><span className="rounded-full bg-[#E2F1EE] px-3 py-1.5 text-xs font-bold text-teal">Available</span></div>
           <button disabled className="mt-8 w-full sm:w-auto rounded-full bg-slate-300 px-8 py-4 text-sm font-bold text-slate-600 cursor-not-allowed">Purchases opening soon</button>
           <p className="mt-3 text-xs text-slate-400">Checkout is not active yet. No payment will be collected on this preview site.</p>
