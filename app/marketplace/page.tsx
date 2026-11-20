@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Search, ShoppingBag, Store, ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,10 +22,12 @@ type ProductItem = {
   price: number | string;
   currency: string;
   cover_image_path: string | null;
-  category: { name: string } | null;
+  category: { name: string; slug: string } | null;
 };
 
 export default function MarketplacePage() {
+  const searchParams = useSearchParams();
+  const selectedCategory = searchParams.get("category") ?? "";
   const [stores, setStores] = useState<StoreItem[]>([]);
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [query, setQuery] = useState("");
@@ -38,7 +41,7 @@ export default function MarketplacePage() {
       const [storeResult, productResult] = await Promise.all([
         supabase.rpc("get_public_marketplace_stores"),
         supabase.from("products")
-          .select("id,title,slug,summary,description,price,currency,cover_image_path,category:categories(name)")
+          .select("id,title,slug,summary,description,price,currency,cover_image_path,category:categories(name,slug)")
           .eq("status", "published")
           .order("created_at", { ascending: false })
           .limit(48)
@@ -61,8 +64,8 @@ export default function MarketplacePage() {
     (s.store_name + " " + (s.description ?? "")).toLowerCase().includes(term)
   ), [stores, term]);
   const filteredProducts = useMemo(() => products.filter(p =>
-    (p.title + " " + (p.summary ?? "") + " " + (p.description ?? "") + " " + (p.category?.name ?? "")).toLowerCase().includes(term)
-  ), [products, term]);
+    (p.title + " " + (p.summary ?? "") + " " + (p.description ?? "") + " " + (p.category?.name ?? "")).toLowerCase().includes(term) && (!selectedCategory || p.category?.slug === selectedCategory)
+  ), [products, term, selectedCategory]);
   const formatPrice = (price: number | string, currency: string) => {
     try { return new Intl.NumberFormat("en", { style: "currency", currency }).format(Number(price)); }
     catch { return currency + " " + Number(price).toFixed(2); }
@@ -131,11 +134,11 @@ export default function MarketplacePage() {
 
             <section>
               <div className="mb-7 flex items-end justify-between gap-4">
-                <div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">The catalogue</p><h2 className="mt-2 text-2xl font-extrabold text-slate-900 md:text-3xl">Browse products</h2></div>
+                <div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">The catalogue</p><h2 className="mt-2 text-2xl font-extrabold text-slate-900 md:text-3xl">{selectedCategory ? `Browse ${selectedCategory.replace(/-/g, " ")}` : "Browse products"}</h2></div>
                 <span className="text-sm text-slate-500">{filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"}</span>
               </div>
               {filteredProducts.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">No published products match your search yet.</div>
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">No published products match this category or search yet.</div>
               ) : (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   {filteredProducts.map(product => {
@@ -161,7 +164,7 @@ export default function MarketplacePage() {
             </section>
           </>
         )}
-        <div className="border-t border-slate-200 pt-6"><Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-teal-700 hover:underline"><ArrowLeft size={16}/> Back to home</Link></div>
+        <div className="border-t border-slate-200 pt-6"><Link href="/marketplace" className="mr-5 inline-flex items-center gap-2 text-sm font-bold text-teal-700 hover:underline">All marketplace products</Link><Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-teal-700 hover:underline"><ArrowLeft size={16}/> Back to home</Link></div>
       </div>
     </main>
   );
