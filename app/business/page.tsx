@@ -142,7 +142,7 @@ export default function BusinessWorkspacePage() {
   return (
     <main className="min-h-screen bg-[#F5F7F8] px-5 py-10">
       <div className="mx-auto max-w-4xl">
-        <Link href="/" className="text-sm font-bold text-teal-700 hover:underline">← NBJCreative Hub</Link>
+        <div className="flex flex-wrap items-center justify-between gap-4"><Link href="/" className="text-sm font-bold text-teal-700 hover:underline">← NBJCreative Hub</Link><nav className="flex flex-wrap gap-3 text-xs font-semibold text-slate-600"><Link href="/marketplace">Marketplace</Link><Link href="/work">Work</Link><Link href="/academy">Academy</Link><Link href="/vendor">Vendor Centre</Link><Link href="/dashboard">Dashboard</Link></nav></div>
         <div className="mt-6 rounded-3xl bg-slate-950 p-8 text-white">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-300">Create · Manage · Grow</p>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">NBJ Business</h1>
