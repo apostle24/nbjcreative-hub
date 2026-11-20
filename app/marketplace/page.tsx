@@ -78,10 +78,7 @@ export default function MarketplacePage() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
           <Link href="/" className="text-lg font-extrabold tracking-tight text-slate-900">NBJCreative <span className="text-teal-700">Hub</span></Link>
-          <div className="flex items-center gap-4">
-            <Link href="/" className="hidden text-sm font-semibold text-slate-600 sm:inline">Home</Link>
-            <Link href="/cart" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-teal-700"><ShoppingBag size={17}/> Cart</Link>
-          </div>
+          <nav className="flex flex-wrap items-center justify-end gap-3 text-xs font-semibold text-slate-600 sm:gap-4"><Link href="/work" className="hover:text-teal-700">Work</Link><Link href="/academy" className="hover:text-teal-700">Academy</Link><Link href="/vendor" className="hover:text-teal-700">Sell</Link><Link href="/business" className="hover:text-teal-700">Business</Link><Link href="/dashboard" className="hover:text-teal-700">Dashboard</Link><Link href="/cart" className="inline-flex items-center gap-1 hover:text-teal-700"><ShoppingBag size={16}/> Cart</Link></nav>
         </div>
       </header>
 
