@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { ArrowRight, Search, ShoppingBag, Menu, X, Sparkles, Download, ShieldCheck, Globe2, ChevronRight } from "lucide-react";
+import { ArrowRight, Search, ShoppingBag, Menu, X, Sparkles, Download, ShieldCheck, Globe2, ChevronRight, BriefcaseBusiness, GraduationCap, Store, Building2, LayoutDashboard } from "lucide-react";
 
 const categoryPresentation = [
   { name: "Business", detail: "Build and grow with confidence", icon: "↗", color: "bg-[#E9F3EF]", count: "Business plans, finance tools & templates" },
@@ -63,7 +63,7 @@ export default function Home() {
     return () => { mounted = false; };
   }, []);
 
-  const visibleCategories = categories.map(category => {
+  const visibleCategories = (categories.length ? categories : categoryPresentation.map((item, index) => ({ id: item.name, name: item.name, slug: item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), description: item.detail, sort_order: index }))).map(category => {
     const presentation = categoryPresentation.find(item => item.name === category.name);
     return {
       ...presentation,
@@ -92,12 +92,12 @@ export default function Home() {
           <span className="leading-tight"><strong className="block tracking-[-.04em] text-[17px]">NBJCreative <span className="text-teal">Hub</span></strong><small className="text-[9px] tracking-[.18em] text-slate-400 font-bold">DIGITAL PRODUCTS & RESOURCES</small></span>
         </a>
         <nav className="hidden lg:flex items-center gap-7 text-[13px] font-semibold text-slate-600">
-          <a className="text-ink" href="#shop">Shop</a><Link href="/marketplace" className="hover:text-teal">Marketplace</Link><a href="#categories" className="hover:text-teal">Categories</a><a href="#about" className="hover:text-teal">About</a><a href="#newsletter" className="hover:text-teal">Updates</a>
+          <Link className="text-ink" href="/marketplace">Marketplace</Link><a href="#categories" className="hover:text-teal">Categories</a><Link href="/work" className="hover:text-teal">Work</Link><Link href="/academy" className="hover:text-teal">Academy</Link><Link href="/business" className="hover:text-teal">Business</Link>
         </nav>
-        <div className="hidden md:flex items-center gap-3"><Link href="/cart" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-teal"><ShoppingBag size={17}/> Cart</Link><Link href="/marketplace" className="text-sm font-semibold text-slate-600 hover:text-teal">Marketplace</Link><a href="#shop" className="text-sm font-semibold text-slate-600 hover:text-teal">Explore products</a><a href="#shop" className="rounded-full bg-teal px-5 py-3 text-white text-sm font-bold hover:bg-[#11696d]">Browse shop <ArrowRight size={15} className="inline ml-1"/></a></div>
+        <div className="hidden md:flex items-center gap-4"><Link href="/cart" aria-label="Shopping cart" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-teal"><ShoppingBag size={17}/> Cart</Link><Link href="/dashboard" className="rounded-full bg-ink px-5 py-3 text-white text-sm font-bold hover:bg-teal">My Dashboard <ArrowRight size={15} className="inline ml-1"/></Link></div>
         <button className="lg:hidden p-2" aria-label="Toggle menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X/> : <Menu/>}</button>
       </div>
-      {menuOpen && <div className="lg:hidden border-t px-5 py-4 grid gap-4 text-sm font-semibold"><a href="#shop" onClick={()=>setMenuOpen(false)}>Shop</a><Link href="/marketplace" onClick={()=>setMenuOpen(false)}>Marketplace</Link><Link href="/work" onClick={()=>setMenuOpen(false)}>NBJ Work</Link><Link href="/academy" onClick={()=>setMenuOpen(false)}>NBJ Academy</Link><Link href="/vendor" onClick={()=>setMenuOpen(false)}>Vendor Centre</Link><Link href="/business" onClick={()=>setMenuOpen(false)}>NBJ Business</Link><Link href="/dashboard" onClick={()=>setMenuOpen(false)}>My Dashboard</Link><Link href="/help" onClick={()=>setMenuOpen(false)}>Help Centre</Link></div>}
+      {menuOpen && <div className="lg:hidden border-t px-5 py-4 grid gap-4 text-sm font-semibold"><Link href="/marketplace" onClick={()=>setMenuOpen(false)}>Marketplace</Link><Link href="/work" onClick={()=>setMenuOpen(false)}>NBJ Work</Link><Link href="/academy" onClick={()=>setMenuOpen(false)}>NBJ Academy</Link><Link href="/vendor" onClick={()=>setMenuOpen(false)}>Vendor Centre</Link><Link href="/business" onClick={()=>setMenuOpen(false)}>NBJ Business</Link><Link href="/dashboard" onClick={()=>setMenuOpen(false)}>My Dashboard</Link><Link href="/help" onClick={()=>setMenuOpen(false)}>Help Centre</Link></div>}
     </header>
 
     <section className="home-hero relative overflow-hidden">
@@ -131,9 +131,9 @@ export default function Home() {
     <section id="categories" className="container py-20">
       <div className="flex flex-wrap justify-between items-end gap-5 mb-9"><div><p className="eyebrow mb-3">Explore the collection</p><h2 className="section-title">Find the right tools for<br className="hidden sm:block"/> your next step.</h2></div><a href="#shop" className="text-sm font-bold text-teal">View all products <ArrowRight size={15} className="inline ml-1"/></a></div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {visibleCategories.map((c) => <button key={c.name} onClick={()=>{setActive(c.name);document.getElementById("shop")?.scrollIntoView({behavior:"smooth"});}} className="category-tile group rounded-2xl border border-violet-100 bg-white p-5 text-left hover:border-violet-300 hover:shadow-soft transition-all">
+        {visibleCategories.map((c) => <Link key={c.name} href={`/marketplace?category=${encodeURIComponent(c.slug)}`} className="category-tile group rounded-2xl border border-violet-100 bg-white p-5 text-left hover:border-violet-300 hover:shadow-soft transition-all">
           <div className={`w-12 h-12 rounded-xl ${c.color} grid place-items-center text-2xl text-ink mb-5`}>{c.icon}</div><h3 className="font-bold text-ink">{c.name}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{c.count}</p><div className="mt-5 flex items-center justify-between text-[11px] font-bold text-teal"><span>Explore department</span><ChevronRight size={15} className="group-hover:translate-x-1 transition-transform"/></div>
-        </button>)}
+        </Link>)}
       </div>
     </section>
 
@@ -150,8 +150,22 @@ export default function Home() {
         {loading && <div className="rounded-2xl bg-white p-12 text-center text-sm text-slate-500">Loading products...</div>}
         {!loading && catalogueError && <div className="rounded-2xl bg-white p-12 text-center text-sm text-rose-600">{catalogueError}</div>}
         {!loading && !catalogueError && visibleProducts.length===0 && <div className="rounded-2xl bg-white p-12 text-center text-sm text-slate-500">{products.length === 0 ? "Our digital collection is being prepared. Please check back soon." : "No products match that search yet. Try another category or keyword."}</div>}
-        <p className="mt-6 text-center text-[11px] text-slate-400">Products shown here are published in the NBJCreative Hub catalogue. Checkout will be connected in a later step.</p>
+        <p className="mt-6 text-center text-[11px] text-slate-400">Browse published products, open their details and review the available purchase options.</p>
       </div>
+    </section>
+
+
+    <section className="container py-16">
+      <div className="mb-8"><p className="eyebrow mb-3">Beyond the marketplace</p><h2 className="section-title">One hub. All your workspaces.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Access the services and tools already available across NBJCreative Hub from one place.</p></div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          {title:"NBJ Work",description:"Jobs, projects and professional profiles",href:"/work",icon:<BriefcaseBusiness/>},
+          {title:"NBJ Academy",description:"Courses, learning and certificates",href:"/academy",icon:<GraduationCap/>},
+          {title:"Vendor Centre",description:"Seller workspace and product management",href:"/vendor",icon:<Store/>},
+          {title:"NBJ Business",description:"Business workspace and operations",href:"/business",icon:<Building2/>}
+        ].map(item=><Link key={item.href} href={item.href} className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-teal-300 hover:shadow-soft"><span className="inline-flex rounded-xl bg-[#E8F2F0] p-3 text-teal">{item.icon}</span><h3 className="mt-4 font-bold text-ink">{item.title}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{item.description}</p><span className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-teal">Open workspace <ArrowRight size={14}/></span></Link>)}
+      </div>
+      <div className="mt-6"><Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-bold text-white hover:bg-teal"><LayoutDashboard size={16}/> Open central dashboard <ArrowRight size={15}/></Link></div>
     </section>
 
     <section id="about" className="container py-20 grid md:grid-cols-2 gap-12 items-center">
