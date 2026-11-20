@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Search, ShoppingBag, Store, ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -26,8 +25,7 @@ type ProductItem = {
 };
 
 export default function MarketplacePage() {
-  const searchParams = useSearchParams();
-  const selectedCategory = searchParams.get("category") ?? "";
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [stores, setStores] = useState<StoreItem[]>([]);
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [query, setQuery] = useState("");
@@ -35,6 +33,7 @@ export default function MarketplacePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setSelectedCategory(new URLSearchParams(window.location.search).get("category") ?? "");
     let active = true;
     async function load() {
       const supabase = createClient();
