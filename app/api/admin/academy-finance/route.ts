@@ -49,43 +49,28 @@ export async function PATCH(request: Request) {
     if (action === "reconcile") {
       const fee = Number(body.platformFee);
       if (!id || !Number.isFinite(fee) || fee < 0) return NextResponse.json({ error: "Enter a valid platform fee." }, { status: 400 });
-      const { data: row, error: readError } = await access.admin.from("academy_instructor_earnings").select("id,gross_amount,status").eq("id", id).maybeSingle();
-      if (readError || !row) return NextResponse.json({ error: "Earning record not found." }, { status: 404 });
-      if (row.status !== "pending_review") return NextResponse.json({ error: "This earning has already been reconciled." }, { status: 409 });
-      const gross = Number(row.gross_amount);
-      if (fee >= gross) return NextResponse.json({ error: "Platform fee must be less than the gross payment." }, { status: 400 });
-      const { error } = await access.admin.from("academy_instructor_earnings").update({
-        platform_fee_amount: fee,
-        instructor_amount: Number((gross - fee).toFixed(2)),
-        status: "available",
-        reconciled_at: new Date().toISOString()
-      }).eq("id", id).eq("status", "pending_review");
-      if (error) return NextResponse.json({ error: "Could not reconcile this earning: " + error.message }, { status: 500 });
+      const { error } = await access.admin.rpc("admin_reconcile_academy_earning", {
+        p_admin_id: (await createClient()).auth.getUser().then(({data}) => data.user?.id),
+        p_earning_id: id,
+        p_platform_fee: fee
+      });
+      if (error) return NextResponse.json({ error: error.message }, { status: 409 });
       return NextResponse.json({ ok: true });
     }
 
     if (action === "payout") {
       const status = body.status;
       if (!id || !["approved", "rejected", "paid"].includes(status)) return NextResponse.json({ error: "Invalid payout action." }, { status: 400 });
-      const { data: payout, error: readError } = await access.admin.from("academy_instructor_payout_requests").select("id,status").eq("id", id).maybeSingle();
-      if (readError || !payout) return NextResponse.json({ error: "Payout request not found." }, { status: 404 });
-      const now = new Date().toISOString();
-      if (status === "approved" && payout.status !== "pending") return NextResponse.json({ error: "Only pending requests can be approved." }, { status: 409 });
-      if (status === "rejected" && payout.status !== "pending") return NextResponse.json({ error: "Only pending requests can be rejected." }, { status: 409 });
-      if (status === "paid" && payout.status !== "approved") return NextResponse.json({ error: "Only approved requests can be marked paid." }, { status: 409 });
-      const update: Record<string, unknown> = { status, admin_note: note || null };
-      if (status === "approved" || status === "rejected") update.reviewed_at = now;
-      if (status === "paid") update.paid_at = now;
-      const { error } = await access.admin.from("academy_instructor_payout_requests").update(update).eq("id", id).eq("status", payout.status);
-      if (error) return NextResponse.json({ error: "Could not update payout request: " + error.message }, { status: 500 });
-      if (status === "paid") {
-        const { error: ledgerError } = await access.admin.from("academy_instructor_earnings").update({ status: "paid" }).eq("payout_request_id", id).eq("status", "requested");
-        if (ledgerError) return NextResponse.json({ error: "Payout marked paid, but the earnings ledger needs reconciliation: " + ledgerError.message }, { status: 500 });
-      }
-      if (status === "rejected") {
-        const { error: ledgerError } = await access.admin.from("academy_instructor_earnings").update({ status: "available", payout_request_id: null }).eq("payout_request_id", id).eq("status", "requested");
-        if (ledgerError) return NextResponse.json({ error: "Request rejected, but the earnings balance needs reconciliation: " + ledgerError.message }, { status: 500 });
-      }
+      const session = await createClient();
+      const { data: auth } = await session.auth.getUser();
+      if (!auth.user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
+      const { error } = await access.admin.rpc("admin_update_academy_payout", {
+        p_admin_id: auth.user.id,
+        p_payout_id: id,
+        p_status: status,
+        p_note: note || null
+      });
+      if (error) return NextResponse.json({ error: error.message }, { status: 409 });
       return NextResponse.json({ ok: true });
     }
     return NextResponse.json({ error: "Unsupported finance action." }, { status: 400 });
