@@ -113,7 +113,7 @@ export default function VendorCentrePage() {
 
   return <main className="min-h-screen bg-mist px-5 py-12">
     <div className="mx-auto max-w-3xl">
-      <Link href="/" className="text-xl font-extrabold tracking-tight text-ink">NBJCreative <span className="text-teal">Hub</span></Link>
+      <div className="flex flex-wrap items-center justify-between gap-4"><Link href="/" className="text-xl font-extrabold tracking-tight text-ink">NBJCreative <span className="text-teal">Hub</span></Link><nav className="flex flex-wrap gap-3 text-xs font-semibold text-slate-600"><Link href="/marketplace">Marketplace</Link><Link href="/work">Work</Link><Link href="/academy">Academy</Link><Link href="/business">Business</Link><Link href="/dashboard">Dashboard</Link></nav></div>
       <section className="mt-8 rounded-3xl border border-slate-100 bg-white p-7 shadow-soft md:p-9">
         <p className="eyebrow">Seller services</p>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink">NBJ Vendor Centre</h1>
