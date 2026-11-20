@@ -53,7 +53,12 @@ export default function AcademyPage() {
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
         <Link href="/" className="text-lg font-extrabold text-slate-900">NBJCreative <span className="text-teal-700">Hub</span></Link>
-        <nav className="flex flex-wrap items-center gap-4 text-sm font-semibold">
+        <nav className="flex flex-wrap items-center gap-3 text-xs font-semibold sm:gap-4">
+          <Link href="/marketplace" className="text-slate-600 hover:text-teal-700">Marketplace</Link>
+          <Link href="/work" className="text-slate-600 hover:text-teal-700">Work</Link>
+          <Link href="/vendor" className="text-slate-600 hover:text-teal-700">Vendor</Link>
+          <Link href="/business" className="text-slate-600 hover:text-teal-700">Business</Link>
+          <Link href="/dashboard" className="text-slate-600 hover:text-teal-700">Dashboard</Link>
           <Link href="/account/learning" className="text-slate-600 hover:text-teal-700">My Learning</Link>
           <Link href="/academy/instructor" className="text-slate-600 hover:text-teal-700">Teach a course</Link>
           <Link href="/work" className="text-slate-600 hover:text-teal-700">NBJ Work</Link>
