@@ -18,11 +18,12 @@ async function getAdmin() {
 export async function GET() {
   const access = await getAdmin();
   if ("response" in access) return access.response;
-  const [earnings, payouts] = await Promise.all([
+  const [earnings, payouts, audit] = await Promise.all([
     access.admin.from("academy_instructor_earnings").select("id,instructor_id,course_id,currency,gross_amount,platform_fee_amount,instructor_amount,status,created_at,reconciled_at").order("created_at", { ascending: false }).limit(500),
-    access.admin.from("academy_instructor_payout_requests").select("id,instructor_id,currency,amount,payout_method,account_name,account_details,status,instructor_note,admin_note,requested_at,reviewed_at,paid_at").order("requested_at", { ascending: false }).limit(300)
+    access.admin.from("academy_instructor_payout_requests").select("id,instructor_id,currency,amount,payout_method,account_name,account_details,status,instructor_note,admin_note,requested_at,reviewed_at,paid_at").order("requested_at", { ascending: false }).limit(300),
+    access.admin.from("academy_finance_audit_log").select("id,actor_id,action,earning_id,payout_request_id,amount,currency,note,created_at").order("created_at", { ascending: false }).limit(100)
   ]);
-  if (earnings.error || payouts.error) return NextResponse.json({ error: "Could not load Academy finance records." }, { status: 500 });
+  if (earnings.error || payouts.error || audit.error) return NextResponse.json({ error: "Could not load Academy finance records." }, { status: 500 });
   const instructorIds = [...new Set([...(earnings.data ?? []).map(x => x.instructor_id), ...(payouts.data ?? []).map(x => x.instructor_id)])];
   const courseIds = [...new Set((earnings.data ?? []).map(x => x.course_id))];
   const [profiles, courses] = await Promise.all([
@@ -33,7 +34,8 @@ export async function GET() {
   const courseMap = new Map((courses.data ?? []).map(x => [x.id, x.title]));
   return NextResponse.json({
     earnings: (earnings.data ?? []).map(x => ({ ...x, instructor: profileMap.get(x.instructor_id) ?? null, course_title: courseMap.get(x.course_id) ?? "Course" })),
-    payouts: (payouts.data ?? []).map(x => ({ ...x, instructor: profileMap.get(x.instructor_id) ?? null }))
+    payouts: (payouts.data ?? []).map(x => ({ ...x, instructor: profileMap.get(x.instructor_id) ?? null })),
+    audit: audit.data ?? []
   });
 }
 
