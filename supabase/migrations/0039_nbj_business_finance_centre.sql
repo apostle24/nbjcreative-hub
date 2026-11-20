@@ -85,10 +85,7 @@ drop policy if exists "Business managers update financial transactions" on publi
 create policy "Business managers update financial transactions"
   on public.business_financial_transactions for update to authenticated
   using (public.can_manage_business_workspace(workspace_id))
-  with check (
-    public.can_manage_business_workspace(workspace_id)
-    and created_by = (select created_by from public.business_financial_transactions t where t.id = id)
-  );
+  with check (public.can_manage_business_workspace(workspace_id));
 
 drop policy if exists "Business members read budgets" on public.business_budgets;
 create policy "Business members read budgets"
