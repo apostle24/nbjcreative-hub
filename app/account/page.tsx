@@ -17,7 +17,7 @@ export default function AccountPage() {
     event.preventDefault();
     setBusy(true); setMessage(""); setError("");
     const supabase = createClient();
-    let destination = "/";
+    let destination = "/dashboard";
 
     if (typeof window !== "undefined") {
       const requested = new URLSearchParams(window.location.search).get("next");
