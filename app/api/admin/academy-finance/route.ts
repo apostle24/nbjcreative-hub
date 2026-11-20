@@ -49,8 +49,11 @@ export async function PATCH(request: Request) {
     if (action === "reconcile") {
       const fee = Number(body.platformFee);
       if (!id || !Number.isFinite(fee) || fee < 0) return NextResponse.json({ error: "Enter a valid platform fee." }, { status: 400 });
+      const session = await createClient();
+      const { data: auth } = await session.auth.getUser();
+      if (!auth.user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
       const { error } = await access.admin.rpc("admin_reconcile_academy_earning", {
-        p_admin_id: (await createClient()).auth.getUser().then(({data}) => data.user?.id),
+        p_admin_id: auth.user.id,
         p_earning_id: id,
         p_platform_fee: fee
       });
