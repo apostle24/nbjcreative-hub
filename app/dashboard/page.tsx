@@ -56,7 +56,7 @@ export default function DashboardPage() {
 
   if (loading) return <main className="min-h-screen grid place-items-center bg-[#F5F7F8] text-sm text-slate-500">Loading your NBJ dashboard...</main>;
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "admin" && userEmail.toLowerCase() === "nbjoshua8@gmail.com";
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] || userEmail.split("@")[0] || "there";
 
   return <main className="min-h-screen bg-[#F5F7F8] text-slate-900">
