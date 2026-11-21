@@ -111,7 +111,7 @@ export default function CartPage() {
             </div>
             <div className="min-w-0 flex-1">
               <Link href={`/products/${line.slug}`} className="font-bold text-ink hover:text-teal">{line.title}</Link>
-              <p className="mt-1 text-xs font-semibold text-teal">{line.product_type === "physical" ? "Physical product · Delivery address required" : line.product_type === "online_service" ? "Online service · Seller will provide next steps" : "Digital product · Download after confirmed payment"}</p>}{line.summary && <p className="mt-1 text-xs leading-5 text-slate-500">{line.summary}</p>}
+              <p className="mt-1 text-xs font-semibold text-teal">{line.product_type === "physical" ? "Physical product · Delivery address required" : line.product_type === "online_service" ? "Online service · Seller will provide next steps" : "Digital product · Download after confirmed payment"}</p>{line.summary && <p className="mt-1 text-xs leading-5 text-slate-500">{line.summary}</p>}
               <p className="mt-3 font-extrabold text-ink">{new Intl.NumberFormat("en", { style: "currency", currency: line.currency }).format(Number(line.price))}</p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <div className="inline-flex items-center rounded-full border border-slate-200">
