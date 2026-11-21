@@ -61,7 +61,7 @@ export default function VendorProductsPage() {
 
   function edit(product: Product) {
     setEditing(product.id);
-    setForm({ title: product.title, slug: product.slug, summary: product.summary ?? "",
+    setForm({ title: product.title, slug: product.slug, product_type: product.product_type ?? "digital", inventory_quantity: product.inventory_quantity == null ? "" : String(product.inventory_quantity), sku: product.sku ?? "", shipping_required: product.shipping_required ?? false, shipping_note: product.shipping_note ?? "", delivery_note: product.delivery_note ?? "", summary: product.summary ?? "",
       description: product.description ?? "", price: String(product.price), currency: product.currency });
     setCover(null); setFiles([]); setError(""); setNotice("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -85,7 +85,9 @@ export default function VendorProductsPage() {
     if (files.length > 10 || files.some(f => f.size > 50 * 1024 * 1024)) {
       setError("Choose up to 10 files, each no larger than 50 MB."); setBusy(false); return;
     }
-    const payload = { title: form.title.trim(), slug, summary: form.summary.trim() || null,
+    const quantity = form.inventory_quantity.trim() === "" ? null : Number(form.inventory_quantity);
+    if (form.product_type === "physical" && (quantity === null || !Number.isInteger(quantity) || quantity < 0)) { setError("Enter the available stock quantity for this physical product."); setBusy(false); return; }
+    const payload = { title: form.title.trim(), slug, product_type: form.product_type, inventory_quantity: form.product_type === "physical" ? quantity : null, sku: form.sku.trim() || null, shipping_required: form.product_type === "physical", shipping_note: form.shipping_note.trim() || null, delivery_note: form.delivery_note.trim() || null, summary: form.summary.trim() || null,
       description: form.description.trim() || null, price, currency: form.currency };
     let productId = editing;
     if (editing) {
