@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { clearCart } from "@/lib/cart";
 
 export default function PaymentCallbackPage() {
   const [state, setState] = useState("checking");
@@ -26,6 +27,7 @@ export default function PaymentCallbackPage() {
             setSuccessLabel("Start learning");
             setMessage("Your course payment is confirmed. You are now enrolled and can access all course lessons.");
           } else {
+            if (result.orderReference) clearCart();
             setMessage("Payment confirmed for order " + result.orderReference + ". Your order is now marked as paid.");
           }
         }
