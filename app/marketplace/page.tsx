@@ -21,6 +21,7 @@ type ProductItem = {
   price: number | string;
   currency: string;
   cover_image_path: string | null;
+  product_type: "physical" | "digital" | "online_service";
   category: { name: string; slug: string } | null;
 };
 
@@ -40,7 +41,7 @@ export default function MarketplacePage() {
       const [storeResult, productResult] = await Promise.all([
         supabase.rpc("get_public_marketplace_stores"),
         supabase.from("products")
-          .select("id,title,slug,summary,description,price,currency,cover_image_path,category:categories(name,slug)")
+          .select("id,title,slug,summary,description,price,currency,cover_image_path,product_type,category:categories(name,slug)")
           .eq("status", "published")
           .order("created_at", { ascending: false })
           .limit(48)
@@ -86,7 +87,7 @@ export default function MarketplacePage() {
         <div className="mx-auto max-w-7xl px-5 py-14 md:py-20">
           <p className="text-xs font-bold uppercase tracking-[.22em] text-teal-700">Discover NBJCreative Hub</p>
           <h1 className="mt-4 max-w-3xl text-4xl font-extrabold tracking-tight text-slate-900 md:text-6xl">Explore the marketplace.</h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">Discover useful digital products and browse independent seller stores, all in one place.</p>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">Discover physical products, digital downloads and online services from independent sellers, all in one place.</p>
           <div className="relative mt-8 max-w-xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
             <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search products and stores..." className="w-full rounded-full border border-slate-200 bg-white py-4 pl-12 pr-5 text-sm outline-none focus:border-teal-700"/>
@@ -146,9 +147,9 @@ export default function MarketplacePage() {
                             {cover ? <img src={cover} alt={product.title} className="h-full w-full object-cover"/> : <div className="grid h-full place-items-center text-6xl text-teal-900/40">▤</div>}
                           </div>
                           <div className="p-5">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700">{product.category?.name ?? "Digital product"}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700">{product.product_type === "physical" ? "Physical product" : product.product_type === "online_service" ? "Online service" : "Digital download"} · {product.category?.name ?? "Marketplace"}</p>
                             <h3 className="mt-2 min-h-12 font-bold leading-6 text-slate-900">{product.title}</h3>
-                            <p className="mt-2 min-h-10 text-xs leading-5 text-slate-500">{product.summary || product.description || "A useful digital resource."}</p>
+                            <p className="mt-2 min-h-10 text-xs leading-5 text-slate-500">{product.summary || product.description || "A useful product or service from an independent seller."}</p>
                             <p className="mt-4 text-lg font-extrabold text-slate-900">{formatPrice(product.price, product.currency)}</p>
                           </div>
                         </Link>
