@@ -71,6 +71,7 @@ export default function CartPage() {
     : null;
 
   function changeQuantity(productId: string, quantity: number) {
+    if (quantity > 10) return;
     updateCartQuantity(productId, quantity);
     setLines(current => current
       .map(line => line.id === productId ? { ...line, quantity } : line)
@@ -116,7 +117,7 @@ export default function CartPage() {
                 <div className="inline-flex items-center rounded-full border border-slate-200">
                   <button aria-label={`Decrease quantity for ${line.title}`} onClick={() => changeQuantity(line.id, line.quantity - 1)} className="p-2.5 text-slate-600 hover:text-teal"><Minus size={14}/></button>
                   <span className="min-w-8 text-center text-sm font-bold">{line.quantity}</span>
-                  <button aria-label={`Increase quantity for ${line.title}`} onClick={() => changeQuantity(line.id, line.quantity + 1)} className="p-2.5 text-slate-600 hover:text-teal"><Plus size={14}/></button>
+                  <button aria-label={`Increase quantity for ${line.title}`} onClick={() => changeQuantity(line.id, line.quantity + 1)} disabled={line.quantity >= 10} className="p-2.5 text-slate-600 hover:text-teal disabled:cursor-not-allowed disabled:opacity-40"><Plus size={14}/></button>
                 </div>
                 <button onClick={() => removeItem(line.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-rose-600"><Trash2 size={14}/>Remove</button>
               </div>
