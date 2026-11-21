@@ -6,13 +6,13 @@ import { createClient } from "@/lib/supabase/client";
 
 type Vendor = { id: string; store_name: string; status: string };
 type Product = {
-  id: string; title: string; slug: string; summary: string | null;
+  id: string; title: string; slug: string; product_type: "physical" | "digital" | "online_service"; inventory_quantity: number | null; sku: string | null; shipping_required: boolean; shipping_note: string | null; delivery_note: string | null; summary: string | null;
   description: string | null; price: number | string; currency: string;
   status: "draft" | "published" | "archived"; cover_image_path: string | null;
   created_at: string;
 };
 
-const empty = { title: "", slug: "", summary: "", description: "", price: "", currency: "GHS" };
+const empty = { title: "", slug: "", product_type: "digital" as "physical" | "digital" | "online_service", inventory_quantity: "", sku: "", shipping_required: false, shipping_note: "", delivery_note: "", summary: "", description: "", price: "", currency: "GHS" };
 const slugify = (s: string) => s.toLowerCase().trim().normalize("NFKD")
   .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
@@ -31,7 +31,7 @@ export default function VendorProductsPage() {
   async function loadProducts(vendorId: string) {
     const supabase = createClient();
     const { data, error } = await supabase.from("products")
-      .select("id,title,slug,summary,description,price,currency,status,cover_image_path,created_at")
+      .select("id,title,slug,product_type,inventory_quantity,sku,shipping_required,shipping_note,delivery_note,summary,description,price,currency,status,cover_image_path,created_at")
       .eq("vendor_id", vendorId).order("created_at", { ascending: false });
     if (error) throw error;
     setProducts((data ?? []) as Product[]);
@@ -169,13 +169,15 @@ export default function VendorProductsPage() {
           {editing && <button onClick={reset} className="text-xs font-bold text-slate-500">Cancel editing</button>}</div>
         <form onSubmit={save} className="mt-6 grid gap-5 md:grid-cols-2">
           <label className="text-sm font-semibold text-slate-700">Product title *<input required maxLength={160} value={form.title} onChange={e=>setForm(v=>({...v,title:e.target.value,slug:editing?v.slug:slugify(e.target.value)}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label>
-          <label className="text-sm font-semibold text-slate-700">URL slug *<input required value={form.slug} onChange={e=>setForm(v=>({...v,slug:slugify(e.target.value)}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label>
+          <label className="text-sm font-semibold text-slate-700">What are you selling? *<select value={form.product_type} onChange={e=>setForm(v=>({...v,product_type:e.target.value as typeof v.product_type}))} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal"><option value="physical">Physical product — shipped to customer</option><option value="digital">Digital product — customer downloads files</option><option value="online_service">Online service — delivered online</option></select></label>\n          <label className="text-sm font-semibold text-slate-700">URL slug *<input required value={form.slug} onChange={e=>setForm(v=>({...v,slug:slugify(e.target.value)}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label>
           <div className="grid grid-cols-[1fr_110px] gap-3"><label className="text-sm font-semibold text-slate-700">Price *<input required type="number" min="0" step="0.01" value={form.price} onChange={e=>setForm(v=>({...v,price:e.target.value}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label>
             <label className="text-sm font-semibold text-slate-700">Currency<select value={form.currency} onChange={e=>setForm(v=>({...v,currency:e.target.value}))} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-2 py-3 text-sm font-normal"><option>GHS</option><option>USD</option><option>GBP</option><option>EUR</option></select></label></div>
           <label className="text-sm font-semibold text-slate-700">Short summary<input maxLength={220} value={form.summary} onChange={e=>setForm(v=>({...v,summary:e.target.value}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label>
+          {form.product_type === "physical" && <><label className="text-sm font-semibold text-slate-700">Available stock quantity *<input required type="number" min="0" step="1" value={form.inventory_quantity} onChange={e=>setForm(v=>({...v,inventory_quantity:e.target.value}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label><label className="text-sm font-semibold text-slate-700">SKU (optional)<input value={form.sku} onChange={e=>setForm(v=>({...v,sku:e.target.value}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label><label className="text-sm font-semibold text-slate-700 md:col-span-2">Shipping information<textarea rows={2} value={form.shipping_note} onChange={e=>setForm(v=>({...v,shipping_note:e.target.value}))} placeholder="Shipping regions, estimated dispatch and delivery times, or collection details" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label></>}
+          {form.product_type === "online_service" && <label className="text-sm font-semibold text-slate-700 md:col-span-2">How will you deliver this service? *<textarea required rows={3} value={form.delivery_note} onChange={e=>setForm(v=>({...v,delivery_note:e.target.value}))} placeholder="Explain what the customer receives and how you will deliver it online." className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label>}
           <label className="text-sm font-semibold text-slate-700 md:col-span-2">Full description<textarea rows={4} value={form.description} onChange={e=>setForm(v=>({...v,description:e.target.value}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label>
           <label className="text-sm font-semibold text-slate-700">Cover image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setCover(e.target.files?.[0] ?? null)} className="mt-2 block w-full text-xs font-normal"/><span className="mt-1 block text-xs font-normal text-slate-400">JPG, PNG or WebP · up to 5 MB</span></label>
-          <label className="text-sm font-semibold text-slate-700">Downloadable files<input type="file" multiple accept=".pdf,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" onChange={e=>setFiles(Array.from(e.target.files ?? []))} className="mt-2 block w-full text-xs font-normal"/><span className="mt-1 block text-xs font-normal text-slate-400">Up to 10 files · 50 MB each</span></label>
+          <label className="text-sm font-semibold text-slate-700">Downloadable files (digital products)<input type="file" multiple accept=".pdf,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" onChange={e=>setFiles(Array.from(e.target.files ?? []))} className="mt-2 block w-full text-xs font-normal"/><span className="mt-1 block text-xs font-normal text-slate-400">Up to 10 files · 50 MB each</span></label>
           {notice && <p role="status" className="rounded-xl bg-teal-50 p-3 text-sm text-teal-800 md:col-span-2">{notice}</p>}
           <div className="md:col-span-2"><button disabled={busy} className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Publishing..." : editing ? "Save & publish changes" : "Publish to Marketplace"}</button></div>
         </form>
@@ -183,7 +185,7 @@ export default function VendorProductsPage() {
       <section className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-6 py-5"><h2 className="text-lg font-bold text-slate-900">Your listings ({products.length})</h2></div>
         {products.length === 0 ? <p className="p-10 text-center text-sm text-slate-500">You haven't added any products yet.</p> : <div className="divide-y divide-slate-100">{products.map(p=><div key={p.id} className="flex flex-wrap items-center justify-between gap-4 px-6 py-5">
-          <div><p className="font-semibold text-slate-900">{p.title}</p><p className="mt-1 text-xs text-slate-500">{p.currency} {Number(p.price).toFixed(2)} · <span className="capitalize">{p.status}</span></p></div>
+          <div><p className="font-semibold text-slate-900">{p.title}</p><p className="mt-1 text-xs text-slate-500">{p.currency} {Number(p.price).toFixed(2)} · {p.product_type === "physical" ? "Physical" : p.product_type === "online_service" ? "Online service" : "Digital"} · <span className="capitalize">{p.status}</span></p></div>
           <div className="flex gap-4"><><button onClick={()=>edit(p)} className="text-xs font-bold text-teal-700">Edit</button>{p.status === "draft" && <><button disabled={busy} onClick={async()=>{setBusy(true);setError("");const {error}=await createClient().from("products").update({status:"published"}).eq("id",p.id).eq("vendor_id",vendor.id);if(error)setError("Could not publish this listing: "+error.message);else setNotice("Your product is now published on the marketplace.");await loadProducts(vendor.id);setBusy(false);}} className="text-xs font-bold text-emerald-700">Publish now</button><button disabled={busy} onClick={()=>remove(p)} className="text-xs font-bold text-rose-600">Delete</button></>}</></div>
         </div>)}</div>}
       </section></>}
