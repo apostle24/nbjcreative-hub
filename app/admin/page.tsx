@@ -55,8 +55,8 @@ export default function AdminDashboardPage() {
       if (!user) { router.replace("/admin/login"); return; }
       const { data: profile, error: profileError } = await supabase.from("profiles").select("role,email").eq("id",user.id).maybeSingle();
       if (!active) return;
-      if (profileError || profile?.role !== "admin") {
-        setError("This account does not have administrator access. Ask the project owner to grant the admin role.");
+      if (profileError || profile?.role !== "admin" || user.email?.toLowerCase() !== "nbjoshua8@gmail.com") {
+        setError("Administrator access is restricted to the platform owner account.");
         setChecking(false);
         return;
       }
