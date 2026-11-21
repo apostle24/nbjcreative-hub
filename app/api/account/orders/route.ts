@@ -18,7 +18,7 @@ export async function GET() {
     if (!orderIds.length) return NextResponse.json({ orders: [] });
 
     const { data: items, error: itemsError } = await admin.from("order_items")
-      .select("id, order_id, product_id, product_title, quantity, unit_price, currency, product_type, item_fulfillment_status, shipping_carrier, tracking_number, tracking_url, seller_fulfillment_note, shipped_at, delivered_at")
+      .select("id, order_id, product_id, product_title, quantity, unit_price, currency, product_type, item_fulfillment_status, shipping_carrier, tracking_number, tracking_url, seller_fulfillment_note, shipped_at, delivered_at, service_status, service_seller_note, service_customer_note, service_started_at, service_submitted_at, service_completed_at, service_revision_count")
       .in("order_id", orderIds);
     if (itemsError) throw itemsError;
 
