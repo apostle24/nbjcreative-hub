@@ -78,7 +78,7 @@ begin
     raise exception 'Your customer profile needs a valid email address.';
   end if;
 
-  for v_item in select value from jsonb_array_elements(p_items) loop
+  for v_item in select value from jsonb_array_elements(p_items) order by value->>'productId' loop
     if not (v_item ? 'productId') or not (v_item ? 'quantity') then raise exception 'Invalid cart item.'; end if;
     v_product_id := (v_item->>'productId')::uuid;
     v_quantity := (v_item->>'quantity')::integer;
@@ -146,7 +146,7 @@ begin
     nullif(trim(p_shipping->>'instructions'), ''))
   returning id into v_order_id;
 
-  for v_item in select value from jsonb_array_elements(p_items) loop
+  for v_item in select value from jsonb_array_elements(p_items) order by value->>'productId' loop
     v_product_id := (v_item->>'productId')::uuid;
     v_quantity := (v_item->>'quantity')::integer;
     select pr.title, pr.price, pr.currency, pr.product_type, pr.vendor_id, pr.sku
