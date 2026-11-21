@@ -126,7 +126,31 @@ export default function VendorCentrePage() {
             <span className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusStyles}`}>{vendor.status}</span>
           </div>
           {vendor.status === "pending" && <p className="mt-3 text-sm leading-6 text-slate-600">Your application is waiting for administrator review. You can update your details below while it is pending.</p>}
-          {vendor.status === "approved" && <div className="mt-3"><p className="text-sm leading-6 text-slate-600">Your seller account is active. Create a product, upload its files and publish it directly to the marketplace.</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/vendor/products" className="inline-flex rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white hover:bg-teal">Manage products →</Link><Link href="/vendor/notifications" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Notifications →</Link><Link href="/vendor/settings" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Store settings →</Link><Link href="/vendor/orders" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Manage orders →</Link><Link href="/vendor/sales" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">View sales dashboard →</Link><Link href="/vendor/payouts" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Earnings & payouts →</Link><Link href="/vendor/payout-details" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Payout details →</Link></div></div>}
+          {vendor.status === "approved" && <div className="mt-4">
+            <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-teal-50 p-5 md:p-6">
+              <p className="text-xs font-bold uppercase tracking-wider text-teal-700">Your store is live and ready</p>
+              <h3 className="mt-2 text-xl font-extrabold text-ink">What would you like to sell today?</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">List physical products, digital downloads, templates, documents and other eligible products. Add your details, set a price, upload images or files, then publish. Your listing can appear in the public marketplace without waiting for routine administrator approval.</p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link href="/vendor/products" className="inline-flex items-center rounded-xl bg-ink px-6 py-3.5 text-sm font-bold text-white shadow-sm hover:bg-teal">＋ Add a product now</Link>
+                <Link href="/vendor/products" className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-bold text-ink hover:border-teal">View my product listings</Link>
+              </div>
+              <ol className="mt-5 grid gap-3 text-xs text-slate-600 sm:grid-cols-3">
+                <li className="rounded-xl border border-white bg-white/80 p-3"><strong className="block text-ink">1. Create</strong>Enter your product name, description and price.</li>
+                <li className="rounded-xl border border-white bg-white/80 p-3"><strong className="block text-ink">2. Add content</strong>Upload a cover image and digital files where relevant.</li>
+                <li className="rounded-xl border border-white bg-white/80 p-3"><strong className="block text-ink">3. Publish</strong>Publish and check your listing in the marketplace.</li>
+              </ol>
+            </div>
+            <h3 className="mt-6 text-sm font-bold text-ink">Store management</h3>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Link href="/vendor/orders" className="inline-flex rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-ink hover:border-teal">Orders →</Link>
+              <Link href="/vendor/sales" className="inline-flex rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-ink hover:border-teal">Sales dashboard →</Link>
+              <Link href="/vendor/notifications" className="inline-flex rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-ink hover:border-teal">Notifications →</Link>
+              <Link href="/vendor/settings" className="inline-flex rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-ink hover:border-teal">Store settings →</Link>
+              <Link href="/vendor/payouts" className="inline-flex rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-ink hover:border-teal">Earnings & payouts →</Link>
+              <Link href="/vendor/payout-details" className="inline-flex rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-ink hover:border-teal">Payout details →</Link>
+            </div>
+          </div>}
           {vendor.review_note && <p className="mt-3 rounded-xl bg-mist p-3 text-sm text-slate-600">Review note: {vendor.review_note}</p>}
           <p className="mt-3 text-xs text-slate-400">Store address: /stores/{vendor.store_slug}</p>
         </div> : null}
