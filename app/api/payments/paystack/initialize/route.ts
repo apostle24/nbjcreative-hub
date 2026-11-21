@@ -18,7 +18,42 @@ export async function POST(request: Request) {
       .select("id, reference, customer_id, customer_email, amount, currency, payment_status")
       .eq("reference", orderReference).eq("customer_id", user.id).maybeSingle();
     if (error || !order) return NextResponse.json({ error: "We could not find this order in your account." }, { status: 404 });
-    if (order.payment_status === "paid") return NextResponse.json({ error: "This order has already been paid." }, { status: 409 });
+    if (order.payment_status !== "pending") {
+      return NextResponse.json({ error: "This order is no longer available for payment. Please create a new order or contact support." }, { status: 409 });
+    }
+
+    // Physical products must still have an active stock reservation before
+    // a new Paystack payment session can be created.
+    const { data: orderItems, error: itemsError } = await admin.from("order_items")
+      .select("product_id,product_type").eq("order_id", order.id);
+    if (itemsError || !orderItems) {
+      return NextResponse.json({ error: "We couldn't validate the items in this order." }, { status: 500 });
+    }
+    const physicalItems = orderItems.filter(item => item.product_type === "physical");
+    if (physicalItems.length > 0) {
+      const { data: reservations, error: reservationError } = await admin
+        .from("marketplace_stock_reservations")
+        .select("product_id,status,expires_at")
+        .eq("order_id", order.id);
+      if (reservationError || !reservations) {
+        return NextResponse.json({ error: "Stock reservation verification is temporarily unavailable. Please try again later." }, { status: 503 });
+      }
+      const activeReservations = reservations.filter(reservation =>
+        reservation.status === "reserved" && new Date(reservation.expires_at).getTime() > Date.now()
+      );
+      const reservedProducts = new Set(activeReservations.map(reservation => reservation.product_id));
+      if (activeReservations.length !== physicalItems.length ||
+          physicalItems.some(item => !item.product_id || !reservedProducts.has(item.product_id))) {
+        return NextResponse.json({ error: "The stock reservation for this order has expired. Please return to your cart and create a new order." }, { status: 409 });
+      }
+      // Give the customer a fresh 30-minute payment window when Paystack opens.
+      const { error: extendError } = await admin.from("marketplace_stock_reservations")
+        .update({ expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() })
+        .eq("order_id", order.id).eq("status", "reserved");
+      if (extendError) {
+        return NextResponse.json({ error: "We couldn't extend the stock reservation. Please try again." }, { status: 500 });
+      }
+    }
 
     const amount = Math.round(Number(order.amount) * 100);
     const currency = String(order.currency).trim().toUpperCase();
