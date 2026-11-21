@@ -22,11 +22,13 @@ export async function GET() {
       .in("order_id", orderIds);
     if (itemsError) throw itemsError;
 
-    const itemIds = (items || []).map(i => i.id);
-    const { data: entitlements, error: entitlementsError } = itemIds.length
+    // Only attach download metadata for items belonging to currently paid orders.
+    const paidOrderIds = new Set((orders || []).filter(o => o.payment_status === "paid").map(o => o.id));
+    const paidItemIds = (items || []).filter(i => paidOrderIds.has(i.order_id) && i.product_type === "digital").map(i => i.id);
+    const { data: entitlements, error: entitlementsError } = paidItemIds.length
       ? await admin.from("download_entitlements")
           .select("id, order_item_id, product_file_id, expires_at, max_downloads, download_count, revoked_at")
-          .eq("customer_id", user.id).in("order_item_id", itemIds)
+          .eq("customer_id", user.id).in("order_item_id", paidItemIds)
       : { data: [], error: null };
     if (entitlementsError) throw entitlementsError;
 
