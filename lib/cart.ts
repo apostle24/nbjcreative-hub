@@ -28,14 +28,15 @@ function saveCart(items: CartEntry[]) {
 export function addToCart(productId: string) {
   const items = readCart();
   const existing = items.find(item => item.productId === productId);
-  if (existing) existing.quantity += 1;
+  if (existing) existing.quantity = Math.min(10, existing.quantity + 1);
   else items.push({ productId, quantity: 1 });
   saveCart(items);
 }
 
 export function updateCartQuantity(productId: string, quantity: number) {
+  const safeQuantity = Math.min(10, Math.max(0, Math.trunc(quantity)));
   const items = readCart()
-    .map(item => item.productId === productId ? { ...item, quantity } : item)
+    .map(item => item.productId === productId ? { ...item, quantity: safeQuantity } : item)
     .filter(item => item.quantity > 0);
   saveCart(items);
 }
