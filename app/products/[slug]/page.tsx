@@ -7,8 +7,7 @@ import { ArrowLeft, Download, ShieldCheck, ShoppingBag, Heart } from "lucide-rea
 import { createClient } from "@/lib/supabase/client";
 import { addToCart } from "@/lib/cart";
 
-type Product = {
-  id: string;
+type Product = {\n  id: string;\n  product_type: "physical" | "digital" | "online_service";\n  shipping_note: string | null;\n  delivery_note: string | null;
   title: string;
   slug: string;
   summary: string | null;
