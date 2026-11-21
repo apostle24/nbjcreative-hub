@@ -27,6 +27,7 @@ type CatalogueProduct = {
   currency: string;
   category: { name: string } | null;
   cover_image_path: string | null;
+  product_type: "physical" | "digital" | "online_service";
 };
 
 export default function Home() {
@@ -45,7 +46,7 @@ export default function Home() {
         const supabase = createClient();
         const [categoryResult, productResult] = await Promise.all([
           supabase.from("categories").select("id,name,slug,description,sort_order").eq("is_active", true).order("sort_order"),
-          supabase.from("products").select("id,title,slug,summary,description,price,currency,featured,cover_image_path,category:categories(name)").eq("status", "published").order("created_at", { ascending: false })
+          supabase.from("products").select("id,title,slug,summary,description,price,currency,featured,cover_image_path,product_type,category:categories(name)").eq("status", "published").order("created_at", { ascending: false })
         ]);
         if (categoryResult.error) throw categoryResult.error;
         if (productResult.error) throw productResult.error;
@@ -143,7 +144,7 @@ export default function Home() {
         <div className="flex gap-2 overflow-x-auto pb-4 mb-5">{["All",...visibleCategories.map(c=>c.name)].map(c=><button key={c} onClick={()=>setActive(c)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${active===c?"bg-ink text-white":"bg-white text-slate-600 border border-slate-200 hover:border-teal"}`}>{c}</button>)}</div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {visibleProducts.map(p=><article key={p.id} className="product-card overflow-hidden rounded-2xl border border-violet-100 bg-white">
-            <div className="relative h-48 bg-gradient-to-br from-[#DDECE9] to-[#F3F7F4] flex items-center justify-center overflow-hidden">{p.cover_image_path ? <img src={getCoverUrl(p.cover_image_path) ?? ""} alt={p.title} className="h-full w-full object-cover"/> : <span className="text-[76px] text-ink/80">▤</span>}<span className="absolute top-4 left-4 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-extrabold tracking-wider text-teal">AVAILABLE</span></div>
+            <div className="relative h-48 bg-gradient-to-br from-[#DDECE9] to-[#F3F7F4] flex items-center justify-center overflow-hidden">{p.cover_image_path ? <img src={getCoverUrl(p.cover_image_path) ?? ""} alt={p.title} className="h-full w-full object-cover"/> : <span className="text-[76px] text-ink/80">▤</span>}<span className="absolute top-4 left-4 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-extrabold tracking-wider text-teal">{p.product_type === "physical" ? "PHYSICAL PRODUCT" : p.product_type === "online_service" ? "ONLINE SERVICE" : "DIGITAL DOWNLOAD"}</span></div>
             <div className="p-5"><p className="text-[10px] uppercase tracking-widest font-bold text-teal">{p.category?.name ?? "Digital product"}</p><h3 className="mt-2 min-h-[48px] font-bold leading-6 text-ink">{p.title}</h3><p className="mt-2 min-h-[58px] text-xs leading-5 text-slate-500">{p.summary || p.description || "A practical digital resource designed to help you move forward."}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><strong className="text-lg text-ink">{formatPrice(p.price, p.currency)}</strong><Link href={`/products/${p.slug}`} className="rounded-full bg-ink px-4 py-2.5 text-[11px] font-bold text-white hover:bg-teal">View product</Link></div></div>
           </article>)}
         </div>
