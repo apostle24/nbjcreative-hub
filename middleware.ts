@@ -23,8 +23,18 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Refreshes the user's session when necessary.
-  await supabase.auth.getUser();
+  // Refresh the session and enforce the single-owner administrator allowlist.
+  const { data: { user } } = await supabase.auth.getUser();
+  const pathname = request.nextUrl.pathname;
+  const isAdminRoute = pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+  const isAdminLogin = pathname === "/admin/login";
+  const ownerEmail = "nbjoshua8@gmail.com";
+  if (isAdminRoute && !isAdminLogin && user?.email?.toLowerCase() !== ownerEmail) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = user ? "/dashboard" : "/account";
+    destination.search = "";
+    return NextResponse.redirect(destination);
+  }
   return response;
 }
 
