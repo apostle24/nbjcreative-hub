@@ -24,7 +24,9 @@ alter table public.order_items
   add constraint order_items_product_type_check
   check (product_type in ('physical', 'digital', 'online_service'));
 
-create or replace function public.create_pending_order(p_items jsonb)
+drop function if exists public.create_pending_order(jsonb);
+
+create function public.create_pending_order(p_items jsonb, p_shipping jsonb default '{}'::jsonb)
 returns table(order_id uuid, order_reference text, order_amount numeric, order_currency char(3))
 language plpgsql
 security definer
@@ -41,6 +43,7 @@ declare
   v_reference text := 'NBJ-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 16));
   v_currency char(3);
   v_total numeric(12,2) := 0;
+  v_has_physical boolean := false;
 begin
   if v_user_id is null then raise exception 'You must sign in before placing an order.'; end if;
   if jsonb_typeof(p_items) is distinct from 'array'
@@ -73,6 +76,7 @@ begin
     if not found then raise exception 'A product in your cart is no longer available.'; end if;
 
     if v_product.product_type = 'physical' then
+      v_has_physical := true;
       if v_product.inventory_quantity is null then
         raise exception 'Stock quantity is not configured for %.', v_product.title;
       end if;
@@ -92,9 +96,25 @@ begin
     v_total := v_total + (v_product.price * v_quantity);
   end loop;
 
+  if v_has_physical and (
+    nullif(trim(coalesce(p_shipping->>'full_name','')), '') is null or
+    nullif(trim(coalesce(p_shipping->>'phone','')), '') is null or
+    nullif(trim(coalesce(p_shipping->>'address_line1','')), '') is null or
+    nullif(trim(coalesce(p_shipping->>'city','')), '') is null or
+    nullif(trim(coalesce(p_shipping->>'region','')), '') is null or
+    nullif(trim(coalesce(p_shipping->>'country','')), '') is null
+  ) then raise exception 'Complete the delivery name, phone, street address, city, region and country for physical products.'; end if;
+
   insert into public.orders (customer_id, customer_email, reference, amount, currency,
-    payment_status, fulfillment_status, provider)
-  values (v_user_id, v_email, v_reference, v_total, v_currency, 'pending', 'unfulfilled', 'paystack')
+    payment_status, fulfillment_status, provider, shipping_full_name, shipping_phone,
+    shipping_address_line1, shipping_address_line2, shipping_city, shipping_region,
+    shipping_postal_code, shipping_country, shipping_instructions)
+  values (v_user_id, v_email, v_reference, v_total, v_currency, 'pending', 'unfulfilled', 'paystack',
+    nullif(trim(p_shipping->>'full_name'), ''), nullif(trim(p_shipping->>'phone'), ''),
+    nullif(trim(p_shipping->>'address_line1'), ''), nullif(trim(p_shipping->>'address_line2'), ''),
+    nullif(trim(p_shipping->>'city'), ''), nullif(trim(p_shipping->>'region'), ''),
+    nullif(trim(p_shipping->>'postal_code'), ''), nullif(trim(p_shipping->>'country'), ''),
+    nullif(trim(p_shipping->>'instructions'), ''))
   returning id into v_order_id;
 
   for v_item in select value from jsonb_array_elements(p_items) loop
@@ -113,8 +133,8 @@ begin
 end;
 $$;
 
-revoke all on function public.create_pending_order(jsonb) from public, anon;
-grant execute on function public.create_pending_order(jsonb) to authenticated;
+revoke all on function public.create_pending_order(jsonb, jsonb) from public, anon;
+grant execute on function public.create_pending_order(jsonb, jsonb) to authenticated;
 
 create or replace function public.fulfill_paystack_payment(
   p_order_reference text,
