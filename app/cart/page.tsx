@@ -14,6 +14,7 @@ type CartProduct = {
   price: number | string;
   currency: string;
   cover_image_path: string | null;
+  product_type: "physical" | "digital" | "online_service";
 };
 
 type CartLine = CartProduct & { quantity: number };
@@ -34,7 +35,7 @@ export default function CartPage() {
       const supabase = createClient();
       const { data, error: queryError } = await supabase
         .from("products")
-        .select("id,title,slug,summary,price,currency,cover_image_path")
+        .select("id,title,slug,summary,price,currency,cover_image_path,product_type")
         .in("id", entries.map(item => item.productId))
         .eq("status", "published");
       if (!mounted) return;
@@ -91,7 +92,7 @@ export default function CartPage() {
     <div className="container py-12 md:py-16">
       <p className="eyebrow mb-3">Your selection</p>
       <h1 className="text-4xl font-extrabold tracking-tight text-ink">Shopping cart</h1>
-      <p className="mt-3 text-sm text-slate-500">Review your digital products before checkout.</p>
+      <p className="mt-3 text-sm text-slate-500">Review your products and delivery requirements before checkout.</p>
 
       {loading && <div className="mt-8 rounded-2xl bg-white p-10 text-center text-sm text-slate-500">Loading your cart...</div>}
       {!loading && error && <div className="mt-8 rounded-2xl bg-white p-10 text-center text-sm text-rose-600">{error}</div>}
@@ -109,7 +110,7 @@ export default function CartPage() {
             </div>
             <div className="min-w-0 flex-1">
               <Link href={`/products/${line.slug}`} className="font-bold text-ink hover:text-teal">{line.title}</Link>
-              {line.summary && <p className="mt-1 text-xs leading-5 text-slate-500">{line.summary}</p>}
+              <p className="mt-1 text-xs font-semibold text-teal">{line.product_type === "physical" ? "Physical product · Delivery address required" : line.product_type === "online_service" ? "Online service · Seller will provide next steps" : "Digital product · Download after confirmed payment"}</p>}{line.summary && <p className="mt-1 text-xs leading-5 text-slate-500">{line.summary}</p>}
               <p className="mt-3 font-extrabold text-ink">{new Intl.NumberFormat("en", { style: "currency", currency: line.currency }).format(Number(line.price))}</p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <div className="inline-flex items-center rounded-full border border-slate-200">
@@ -130,7 +131,7 @@ export default function CartPage() {
             {totals.map(([currency, amount]) => <div key={currency} className="mb-2 flex justify-between gap-3 text-sm"><span className="text-slate-500">Subtotal ({currency})</span><strong className="text-ink">{new Intl.NumberFormat("en", { style: "currency", currency }).format(amount)}</strong></div>)}
           </div>
           <Link href="/checkout" className="mt-6 block w-full rounded-full bg-teal px-6 py-4 text-center text-sm font-bold text-white hover:bg-[#11696d]">Continue to checkout</Link>
-          <p className="mt-3 text-xs leading-5 text-slate-400">Your cart is saved on this device. Payments are not being collected yet.</p>
+          <p className="mt-3 text-xs leading-5 text-slate-400">Your cart is saved on this device. Shipping charges, if applicable, are not included unless shown during checkout.</p>
         </aside>
       </div>}
     </div>
