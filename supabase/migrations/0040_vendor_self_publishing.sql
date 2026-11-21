@@ -19,6 +19,18 @@ with check (
   )
 );
 
+create policy "Products: approved vendors read own listings"
+on public.products for select to authenticated
+using (
+  vendor_id is not null
+  and exists (
+    select 1 from public.vendor_profiles v
+    where v.id = vendor_id
+      and v.owner_id = (select auth.uid())
+      and v.status = 'approved'
+  )
+);
+
 create policy "Products: approved vendors manage own listings"
 on public.products for update to authenticated
 using (
