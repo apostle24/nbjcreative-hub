@@ -43,3 +43,7 @@ export function updateCartQuantity(productId: string, quantity: number) {
 export function removeFromCart(productId: string) {
   saveCart(readCart().filter(item => item.productId !== productId));
 }
+
+export function clearCart() {
+  saveCart([]);
+}
