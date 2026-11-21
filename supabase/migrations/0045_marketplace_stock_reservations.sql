@@ -1,31 +1,3 @@
--- Marketplace order lifecycle hardening.
--- Snapshot product type at purchase, prevent unfulfillable digital orders,
--- validate stock at checkout and atomically deduct stock after verified payment.
-
-alter table public.order_items
-  add column if not exists product_type text not null default 'digital',
-  add column if not exists vendor_id uuid references public.vendor_profiles(id) on delete set null,
-  add column if not exists sku text;
-
-alter table public.orders
-  add column if not exists shipping_full_name text,
-  add column if not exists shipping_phone text,
-  add column if not exists shipping_address_line1 text,
-  add column if not exists shipping_address_line2 text,
-  add column if not exists shipping_city text,
-  add column if not exists shipping_region text,
-  add column if not exists shipping_postal_code text,
-  add column if not exists shipping_country text,
-  add column if not exists shipping_instructions text;
-
-alter table public.order_items
-  drop constraint if exists order_items_product_type_check;
-alter table public.order_items
-  add constraint order_items_product_type_check
-  check (product_type in ('physical', 'digital', 'online_service'));
-
-
-
 -- A reservation temporarily removes units from available inventory until payment
 -- is confirmed or the reservation expires.
 create table if not exists public.marketplace_stock_reservations (
@@ -46,9 +18,10 @@ create index if not exists marketplace_stock_reservations_order_idx
 alter table public.marketplace_stock_reservations enable row level security;
 revoke all on public.marketplace_stock_reservations from anon, authenticated;
 
-drop function if exists public.create_pending_order(jsonb);
 
-create function public.create_pending_order(p_items jsonb, p_shipping jsonb default '{}'::jsonb)
+drop function if exists public.create_pending_order(jsonb, jsonb);
+
+create or replace function public.create_pending_order(p_items jsonb, p_shipping jsonb default '{}'::jsonb)
 returns table(order_id uuid, order_reference text, order_amount numeric, order_currency char(3))
 language plpgsql
 security definer
