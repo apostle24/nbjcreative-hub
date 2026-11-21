@@ -14,6 +14,7 @@ type DownloadItem = {
 };
 type OrderItem = {
   id: string; product_title: string; quantity: number; unit_price: number | string; currency: string;
+  product_type?: string; item_fulfillment_status?: string; shipping_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; seller_fulfillment_note?: string | null; shipped_at?: string | null; delivered_at?: string | null;
   downloads: DownloadItem[];
 };
 type Order = {
@@ -125,10 +126,11 @@ export default function OrderHistoryPage() {
               </div>
             </div>
             {isOpen && <div className="border-t border-slate-100 bg-slate-50/70 p-6 md:p-8">
-              <h3 className="mb-4 text-sm font-extrabold text-ink">Products and downloads</h3>
+              <h3 className="mb-4 text-sm font-extrabold text-ink">Products, delivery and downloads</h3>
               <div className="space-y-5">
                 {order.items.map(item => <div key={item.id}>
                   <div className="flex flex-wrap justify-between gap-2"><div><h4 className="font-bold text-ink">{item.product_title}</h4><p className="mt-1 text-xs text-slate-500">Quantity: {item.quantity}</p></div><p className="text-sm font-semibold text-slate-600">{money(Number(item.unit_price) * item.quantity, item.currency)}</p></div>
+                  {isPaid && item.product_type === "physical" && <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Delivery progress</p><p className="mt-2 text-sm font-bold capitalize text-ink">{(item.item_fulfillment_status || "unfulfilled").replaceAll("_", " ")}</p>{item.shipping_carrier && <p className="mt-1 text-xs text-slate-600">Carrier: {item.shipping_carrier}</p>}{item.tracking_number && <p className="mt-1 text-xs text-slate-600">Tracking number: {item.tracking_number}</p>}{item.tracking_url && <a href={item.tracking_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-bold text-teal underline">Track shipment</a>}{item.shipped_at && <p className="mt-1 text-xs text-slate-500">Shipped {new Date(item.shipped_at).toLocaleString()}</p>}{item.delivered_at && <p className="mt-1 text-xs text-slate-500">Delivered {new Date(item.delivered_at).toLocaleString()}</p>}{item.seller_fulfillment_note && <p className="mt-2 text-xs text-slate-600">{item.seller_fulfillment_note}</p>}</div>}
                   {isPaid && item.downloads.length > 0 && <div className="mt-3 space-y-2">
                     {item.downloads.map(d => {
                       const unavailable = !!d.revoked_at || (!!d.expires_at && new Date(d.expires_at) <= new Date()) || (!!d.max_downloads && d.download_count >= d.max_downloads);
