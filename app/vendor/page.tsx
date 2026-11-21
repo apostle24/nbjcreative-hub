@@ -73,6 +73,7 @@ export default function VendorCentrePage() {
     const supabase = createClient();
     const payload = {
       owner_id: userId,
+      status: "approved",
       store_name: storeName.trim(),
       store_slug: slugify(storeName),
       description: description.trim() || null,
@@ -98,7 +99,7 @@ export default function VendorCentrePage() {
         : "We couldn't save your application. Please check your details and try again.");
     } else {
       setVendor(result.data as Vendor);
-      setNotice(vendor ? "Your pending application has been updated." : "Your vendor application has been submitted.");
+      setNotice(vendor ? "Your store details have been updated." : "Your seller account is ready. You can now publish products directly to the marketplace.");
     }
     setBusy(false);
   }
@@ -117,7 +118,7 @@ export default function VendorCentrePage() {
       <section className="mt-8 rounded-3xl border border-slate-100 bg-white p-7 shadow-soft md:p-9">
         <p className="eyebrow">Seller services</p>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink">NBJ Vendor Centre</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Apply to open a store on NBJCreative Hub. Once approved, you will be able to prepare product listings for review and publication.</p>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Open your store on NBJCreative Hub and start publishing products directly to the global marketplace. No administrator approval is required for ordinary product listings.</p>
 
         {vendor ? <div className="mt-7 rounded-2xl border border-slate-200 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -125,7 +126,7 @@ export default function VendorCentrePage() {
             <span className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusStyles}`}>{vendor.status}</span>
           </div>
           {vendor.status === "pending" && <p className="mt-3 text-sm leading-6 text-slate-600">Your application is waiting for administrator review. You can update your details below while it is pending.</p>}
-          {vendor.status === "approved" && <div className="mt-3"><p className="text-sm leading-6 text-slate-600">Your seller account is approved. You can now create product drafts for administrator review.</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/vendor/products" className="inline-flex rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white hover:bg-teal">Manage products →</Link><Link href="/vendor/notifications" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Notifications →</Link><Link href="/vendor/settings" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Store settings →</Link><Link href="/vendor/orders" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Manage orders →</Link><Link href="/vendor/sales" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">View sales dashboard →</Link><Link href="/vendor/payouts" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Earnings & payouts →</Link><Link href="/vendor/payout-details" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Payout details →</Link></div></div>}
+          {vendor.status === "approved" && <div className="mt-3"><p className="text-sm leading-6 text-slate-600">Your seller account is active. Create a product, upload its files and publish it directly to the marketplace.</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/vendor/products" className="inline-flex rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white hover:bg-teal">Manage products →</Link><Link href="/vendor/notifications" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Notifications →</Link><Link href="/vendor/settings" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Store settings →</Link><Link href="/vendor/orders" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Manage orders →</Link><Link href="/vendor/sales" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">View sales dashboard →</Link><Link href="/vendor/payouts" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Earnings & payouts →</Link><Link href="/vendor/payout-details" className="inline-flex rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-ink hover:border-teal hover:text-teal">Payout details →</Link></div></div>}
           {vendor.review_note && <p className="mt-3 rounded-xl bg-mist p-3 text-sm text-slate-600">Review note: {vendor.review_note}</p>}
           <p className="mt-3 text-xs text-slate-400">Store address: /stores/{vendor.store_slug}</p>
         </div> : null}
@@ -139,7 +140,7 @@ export default function VendorCentrePage() {
           {notice && <p role="status" className="rounded-xl bg-teal-50 p-3 text-sm text-teal-800 md:col-span-2">{notice}</p>}
           <button disabled={busy} className="rounded-xl bg-ink px-6 py-3.5 text-sm font-bold text-white hover:bg-teal disabled:opacity-60 md:col-span-2">{busy ? "Saving..." : vendor ? "Update application" : "Submit vendor application"}</button>
         </form>}
-        <div className="mt-7 border-t border-slate-100 pt-5 text-xs text-slate-500"><p>Seller approval is required before products can be listed. Payment and payout details are not collected in this application.</p><Link href="/account" className="mt-3 inline-block font-semibold text-teal hover:underline">Go to my account</Link></div>
+        <div className="mt-7 border-t border-slate-100 pt-5 text-xs text-slate-500"><p>Your store is activated automatically. Listings remain subject to marketplace policies and can be reported, unpublished or suspended if necessary. Payment and payout details are managed separately.</p><Link href="/account" className="mt-3 inline-block font-semibold text-teal hover:underline">Go to my account</Link></div>
       </section>
     </div>
   </main>;
