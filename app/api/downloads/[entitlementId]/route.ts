@@ -16,7 +16,8 @@ export async function GET(
       return NextResponse.json({ error: "Invalid download request." }, { status: 400 });
     }
 
-    // The database function checks ownership and consumes one download atomically.
+    // This RPC verifies ownership, paid order status, digital product type,
+    // expiry and remaining downloads, then atomically consumes one attempt.
     const { data, error } = await session.rpc("consume_download_entitlement", {
       p_entitlement_id: entitlementId
     });
@@ -30,7 +31,10 @@ export async function GET(
       .createSignedUrl(data[0].storage_path, 60, { download: data[0].file_name });
 
     if (signedError || !signed?.signedUrl) {
-      return NextResponse.json({ error: "We could not prepare your secure download. Please contact support." }, { status: 500 });
+      // Restore the consumed attempt if storage could not issue a URL.
+      // This service-role-only RPC can only decrement an existing count.
+      await admin.rpc("restore_download_entitlement", { p_entitlement_id: entitlementId });
+      return NextResponse.json({ error: "We could not prepare your secure download. Please try again." }, { status: 500 });
     }
 
     return NextResponse.json({ url: signed.signedUrl, expiresIn: 60 });
