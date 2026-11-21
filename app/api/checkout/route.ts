@@ -27,7 +27,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "One or more cart items are invalid." }, { status: 400 });
     }
 
-    const { data, error } = await supabase.rpc("create_pending_order", { p_items: items });
+    const shipping = body?.shipping && typeof body.shipping === "object" ? body.shipping : {};
+    const { data, error } = await supabase.rpc("create_pending_order", { p_items: items, p_shipping: shipping });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
