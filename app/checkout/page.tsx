@@ -30,9 +30,10 @@ export default function CheckoutPage() {
       setEmail(user?.email ?? "");
       setItems(cart);
       if (cart.length) {
-        const { data } = await supabase.from("products").select("id,product_type")
+        const { data, error: productError } = await supabase.from("products").select("id,product_type")
           .in("id", cart.map(item => item.productId)).eq("status", "published");
-        if (active) setHasPhysical((data ?? []).some(product => product.product_type === "physical"));
+        if (active && productError) setError("We couldn't verify the products in your cart. Please return to your cart and try again.");
+        if (active && !productError) setHasPhysical((data ?? []).some(product => product.product_type === "physical"));
       }
       if (active) setLoading(false);
     }
@@ -62,6 +63,16 @@ export default function CheckoutPage() {
   }
 
   async function createOrder() {
+    if (items.length === 0) {
+      setError("Your cart is empty. Add a product before checkout.");
+      return;
+    }
+    if (hasPhysical && (!shipping.full_name.trim() || !shipping.phone.trim() ||
+      !shipping.address_line1.trim() || !shipping.city.trim() ||
+      !shipping.region.trim() || !shipping.country.trim())) {
+      setError("Please complete your name, phone, street address, city, region and country before continuing.");
+      return;
+    }
     setBusy(true); setError("");
     try {
       const response = await fetch("/api/checkout", {
@@ -86,6 +97,7 @@ export default function CheckoutPage() {
       <p className="eyebrow mb-3">Secure order setup</p><h1 className="text-4xl font-extrabold tracking-tight text-ink">Checkout</h1>
       {loading && <p className="mt-8 rounded-2xl bg-white p-8 text-sm text-slate-500">Checking your account and cart...</p>}
       {!loading && !email && <section className="mt-8 rounded-2xl bg-white p-8"><h2 className="text-xl font-bold text-ink">Sign in to continue</h2><p className="mt-2 text-sm leading-6 text-slate-500">You need a customer account before we can create an order.</p><Link href="/account?next=/checkout" className="mt-6 inline-flex rounded-full bg-teal px-7 py-3.5 text-sm font-bold text-white">Sign in or create account</Link></section>}
+      {!loading && email && error && !order && <p role="alert" className="mt-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
       {!loading && email && !order && <section className="mt-8 rounded-2xl bg-white p-8">
         <div className="flex items-center gap-3"><LockKeyhole className="text-teal"/><div><h2 className="font-bold text-ink">Customer details</h2><p className="text-sm text-slate-500">{email}</p></div></div>
         <p className="mt-6 text-sm leading-6 text-slate-600">Your order will use current published prices stored securely by NBJCreative Hub. Payment is collected only through Paystack.</p>
