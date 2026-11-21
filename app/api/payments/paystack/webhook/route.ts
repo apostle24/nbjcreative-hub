@@ -4,26 +4,70 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
-function validSignature(rawBody: string, signature: string, secret: string) {
-  const expected = createHmac("sha512", secret).update(rawBody).digest("hex");
-  const supplied = Buffer.from(signature, "utf8");
-  const expectedBuffer = Buffer.from(expected, "utf8");
-  return supplied.length === expectedBuffer.length && timingSafeEqual(supplied, expectedBuffer);
+function safeHexEqual(expected: Buffer, suppliedHex: string) {
+  if (!/^[0-9a-f]{128}$/i.test(suppliedHex)) return false;
+  const supplied = Buffer.from(suppliedHex, "hex");
+  return supplied.length === expected.length && timingSafeEqual(expected, supplied);
+}
+
+function validLegacySignature(rawBody: Buffer, signature: string, secret: string) {
+  const expected = createHmac("sha512", secret).update(rawBody).digest();
+  return safeHexEqual(expected, signature);
+}
+
+function validSigningSecretSignature(rawBody: Buffer, header: string, secret: string) {
+  const parts = header.split(",");
+  let timestamp: number | null = null;
+  const signatures: string[] = [];
+
+  for (const part of parts) {
+    const separator = part.indexOf("=");
+    if (separator < 0) continue;
+    const key = part.slice(0, separator).trim();
+    const value = part.slice(separator + 1).trim();
+
+    if (key === "t") {
+      if (timestamp !== null || !/^\d+$/.test(value)) return false;
+      timestamp = Number(value);
+    } else if (key === "v1") {
+      const colon = value.indexOf(":");
+      if (colon >= 0) signatures.push(value.slice(colon + 1));
+    }
+  }
+
+  if (timestamp === null || signatures.length === 0) return false;
+  if (!Number.isSafeInteger(timestamp) || Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300) return false;
+
+  const expected = createHmac("sha512", secret)
+    .update(String(timestamp) + ".")
+    .update(rawBody)
+    .digest();
+
+  return signatures.some(signature => safeHexEqual(expected, signature));
 }
 
 export async function POST(request: Request) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   if (!secret) return NextResponse.json({ error: "Payment service is not configured." }, { status: 503 });
 
-  const rawBody = await request.text();
-  const signature = request.headers.get("x-paystack-signature") || "";
-  if (!signature || !validSignature(rawBody, signature, secret)) {
+  const rawBody = Buffer.from(await request.arrayBuffer());
+  const signingSecret = process.env.PAYSTACK_WEBHOOK_SECRET;
+  const modernSignature = request.headers.get("paystack-signature") || "";
+  const legacySignature = request.headers.get("x-paystack-signature") || "";
+
+  // Prefer Paystack's timestamped signing secret when configured. Keep the
+  // legacy secret-key signature as a compatibility path during migration.
+  const signatureValid = modernSignature
+    ? Boolean(signingSecret && validSigningSecretSignature(rawBody, modernSignature, signingSecret))
+    : Boolean(legacySignature && validLegacySignature(rawBody, legacySignature, secret));
+
+  if (!signatureValid) {
     return NextResponse.json({ error: "Invalid webhook signature." }, { status: 401 });
   }
 
   let event: any;
   try {
-    event = JSON.parse(rawBody);
+    event = JSON.parse(rawBody.toString("utf8"));
   } catch {
     return NextResponse.json({ error: "Invalid webhook payload." }, { status: 400 });
   }
@@ -65,6 +109,7 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ received: true, processed: true, type: "academy_course" });
     }
+
     const orderReference = typeof metadata.order_reference === "string" ? metadata.order_reference : "";
     const transactionId = String(payment.id || "");
     const eventId = "charge.success:" + transactionId;
