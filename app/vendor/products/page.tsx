@@ -121,8 +121,11 @@ export default function VendorProductsPage() {
       });
       if (rowError) { setError("File uploaded, but its record could not be saved: " + rowError.message); setBusy(false); return; }
     }
+    const { error: publishError } = await supabase.from("products")
+      .update({ status: "published" }).eq("id", productId).eq("vendor_id", vendor.id);
+    if (publishError) { setError("Your product and files were saved, but publication failed. You can publish it from your listings: " + publishError.message); setBusy(false); await loadProducts(vendor.id); return; }
     reset();
-    setNotice("Your listing has been saved as a draft for administrator review.");
+    setNotice("Your product is now published on the NBJCreative Hub marketplace.");
     try { await loadProducts(vendor.id); } catch (e) { setError(e instanceof Error ? e.message : "Refresh failed."); }
     setBusy(false);
   }
@@ -162,7 +165,7 @@ export default function VendorProductsPage() {
       {vendor && <p className="mt-2 text-sm text-slate-500">Store: {vendor.store_name}</p>}
       {error && <p role="alert" className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
       {vendor && <><section className="mt-7 rounded-2xl border border-slate-200 bg-white p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold text-slate-900">{editing ? "Edit draft listing" : "Add a product"}</h2><p className="mt-1 text-xs text-slate-500">Every new listing is saved as a draft. An administrator must publish it.</p></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold text-slate-900">{editing ? "Edit draft listing" : "Add a product"}</h2><p className="mt-1 text-xs text-slate-500">Complete your product details and upload all files. Your listing goes live when you click Publish.</p></div>
           {editing && <button onClick={reset} className="text-xs font-bold text-slate-500">Cancel editing</button>}</div>
         <form onSubmit={save} className="mt-6 grid gap-5 md:grid-cols-2">
           <label className="text-sm font-semibold text-slate-700">Product title *<input required maxLength={160} value={form.title} onChange={e=>setForm(v=>({...v,title:e.target.value,slug:editing?v.slug:slugify(e.target.value)}))} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal"/></label>
@@ -174,17 +177,17 @@ export default function VendorProductsPage() {
           <label className="text-sm font-semibold text-slate-700">Cover image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setCover(e.target.files?.[0] ?? null)} className="mt-2 block w-full text-xs font-normal"/><span className="mt-1 block text-xs font-normal text-slate-400">JPG, PNG or WebP · up to 5 MB</span></label>
           <label className="text-sm font-semibold text-slate-700">Downloadable files<input type="file" multiple accept=".pdf,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" onChange={e=>setFiles(Array.from(e.target.files ?? []))} className="mt-2 block w-full text-xs font-normal"/><span className="mt-1 block text-xs font-normal text-slate-400">Up to 10 files · 50 MB each</span></label>
           {notice && <p role="status" className="rounded-xl bg-teal-50 p-3 text-sm text-teal-800 md:col-span-2">{notice}</p>}
-          <div className="md:col-span-2"><button disabled={busy} className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Saving..." : editing ? "Save draft changes" : "Save product draft"}</button></div>
+          <div className="md:col-span-2"><button disabled={busy} className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Publishing..." : editing ? "Save & publish changes" : "Publish to Marketplace"}</button></div>
         </form>
       </section>
       <section className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-6 py-5"><h2 className="text-lg font-bold text-slate-900">Your listings ({products.length})</h2></div>
         {products.length === 0 ? <p className="p-10 text-center text-sm text-slate-500">You haven't added any products yet.</p> : <div className="divide-y divide-slate-100">{products.map(p=><div key={p.id} className="flex flex-wrap items-center justify-between gap-4 px-6 py-5">
           <div><p className="font-semibold text-slate-900">{p.title}</p><p className="mt-1 text-xs text-slate-500">{p.currency} {Number(p.price).toFixed(2)} · <span className="capitalize">{p.status}</span></p></div>
-          <div className="flex gap-4">{p.status === "draft" && <><button onClick={()=>edit(p)} className="text-xs font-bold text-teal-700">Edit</button><button disabled={busy} onClick={()=>remove(p)} className="text-xs font-bold text-rose-600">Delete</button></>}</div>
+          <div className="flex gap-4"><><button onClick={()=>edit(p)} className="text-xs font-bold text-teal-700">Edit</button>{p.status === "draft" && <><button disabled={busy} onClick={async()=>{setBusy(true);setError("");const {error}=await createClient().from("products").update({status:"published"}).eq("id",p.id).eq("vendor_id",vendor.id);if(error)setError("Could not publish this listing: "+error.message);else setNotice("Your product is now published on the marketplace.");await loadProducts(vendor.id);setBusy(false);}} className="text-xs font-bold text-emerald-700">Publish now</button><button disabled={busy} onClick={()=>remove(p)} className="text-xs font-bold text-rose-600">Delete</button></>}</></div>
         </div>)}</div>}
       </section></>}
-      <p className="mt-6 text-xs leading-5 text-slate-400">Listings are not visible in the public shop until an administrator reviews and publishes them. Payout setup will be handled separately.</p>
+      <p className="mt-6 text-xs leading-5 text-slate-400">Published listings appear in the public marketplace automatically. NBJ may remove or suspend listings that violate marketplace rules. Payout setup is managed separately.</p>
     </div>
   </main>;
 }
