@@ -30,6 +30,13 @@ type VendorOrder = {
   seller_fulfillment_note: string | null;
   shipped_at: string | null;
   delivered_at: string | null;
+  service_status: string;
+  service_seller_note: string | null;
+  service_customer_note: string | null;
+  service_started_at: string | null;
+  service_submitted_at: string | null;
+  service_completed_at: string | null;
+  service_revision_count: number;
 };
 
 type FulfillmentForm = { status: string; carrier: string; trackingNumber: string; trackingUrl: string; note: string };
@@ -52,6 +59,7 @@ export default function VendorOrdersPage() {
   const [notice, setNotice] = useState("");
   const [forms, setForms] = useState<Record<string, FulfillmentForm>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [serviceNotes, setServiceNotes] = useState<Record<string, string>>({});
 
   async function loadOrders() {
     setLoading(true);
@@ -84,6 +92,19 @@ export default function VendorOrdersPage() {
 
   function updateForm(id: string, key: keyof FulfillmentForm, value: string) {
     setForms(current => ({ ...current, [id]: { ...(current[id] || { status: "processing", carrier: "", trackingNumber: "", trackingUrl: "", note: "" }), [key]: value } }));
+  }
+
+  async function saveService(order: VendorOrder, status: "in_progress" | "submitted") {
+    setSaving(order.order_item_id); setError(""); setNotice("");
+    const supabase = createClient();
+    const { error: saveError } = await supabase.rpc("update_vendor_service_fulfillment", {
+      p_order_item_id: order.order_item_id,
+      p_status: status,
+      p_note: serviceNotes[order.order_item_id] || null,
+    });
+    if (saveError) setError(saveError.message);
+    else { setNotice("Service update saved for " + order.order_reference + "."); await loadOrders(); }
+    setSaving(null);
   }
 
   async function saveFulfillment(order: VendorOrder) {
@@ -122,7 +143,7 @@ export default function VendorOrdersPage() {
     <div className="mx-auto max-w-6xl px-5 py-9">
       <p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">Seller workspace</p>
       <h1 className="mt-2 text-3xl font-extrabold text-slate-900">Order management</h1>
-      <p className="mt-2 text-sm text-slate-500">{storeName} · Manage paid physical orders and share delivery progress.</p>
+      <p className="mt-2 text-sm text-slate-500">{storeName} · Manage paid physical orders and online-service work in one place.</p>
       {error && <p role="alert" className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
       {notice && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p>}
       {!error && <>
@@ -134,13 +155,13 @@ export default function VendorOrdersPage() {
         <section className="mt-8 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold text-slate-900">Your order items</h2><p className="mt-1 text-xs text-slate-500">Customer delivery details appear only for paid physical orders.</p></div>
             <select aria-label="Filter orders" value={filter} onChange={e=>setFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-              <option value="all">All orders</option><option value="paid">Paid</option><option value="pending">Awaiting payment</option><option value="physical">Physical products</option><option value="unfulfilled">Not started</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option>
+              <option value="all">All orders</option><option value="paid">Paid</option><option value="pending">Awaiting payment</option><option value="physical">Physical products</option><option value="online_service">Online services</option><option value="unfulfilled">Not started</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option>
             </select>
           </div>
           {visibleOrders.length === 0 ? <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center"><p className="font-semibold text-slate-800">No matching orders</p><p className="mt-2 text-sm text-slate-500">Orders for your products will appear here after checkout.</p></div> :
             visibleOrders.map(order => <article key={order.order_item_id} className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs text-slate-400">{new Date(order.order_created_at).toLocaleString()} · {order.order_reference}</p><h3 className="mt-1 text-lg font-bold text-slate-900">{order.product_title}</h3><p className="mt-1 text-sm text-slate-600">Qty {order.quantity} · {money(Number(order.unit_price) * order.quantity, order.currency)} · {order.product_type.replaceAll("_"," ")}</p></div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">{order.payment_status} · {order.item_fulfillment_status.replaceAll("_"," ")}</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">{order.payment_status} · {order.product_type === "online_service" ? order.service_status.replaceAll("_"," ") : order.item_fulfillment_status.replaceAll("_"," ")}</span>
               </div>
               {order.product_type === "physical" && order.payment_status === "paid" && <div className="mt-5 grid gap-5 border-t border-slate-100 pt-5 lg:grid-cols-2">
                 <div><h4 className="text-sm font-bold text-slate-900">Delivery address</h4>
@@ -157,7 +178,19 @@ export default function VendorOrdersPage() {
                   <button onClick={()=>saveFulfillment(order)} disabled={saving===order.order_item_id} className="rounded-full bg-teal-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-900 disabled:opacity-50">{saving===order.order_item_id ? "Saving..." : "Save fulfilment update"}</button>
                 </div>
               </div>}
-              {order.product_type !== "physical" && <p className="mt-4 border-t border-slate-100 pt-4 text-xs text-slate-500">This item uses {order.product_type.replaceAll("_"," ")} fulfilment. Shipment tracking is for physical products.</p>}
+              {order.product_type === "online_service" && <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
+                <div><h4 className="text-sm font-bold text-slate-900">Online-service fulfilment</h4><p className="mt-1 text-xs text-slate-500">Paid orders only. Start the work, then submit it with a clear message describing what you delivered.</p></div>
+                <p className="text-sm font-semibold capitalize text-teal-800">Status: {order.service_status.replaceAll("_"," ")}</p>
+                {order.service_customer_note && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Customer revision request: {order.service_customer_note}</p>}
+                {order.service_seller_note && <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">Your latest delivery note: {order.service_seller_note}</p>}
+                <textarea aria-label="Service update message" rows={3} placeholder="Describe the work completed or update the customer..." value={serviceNotes[order.order_item_id] ?? order.service_seller_note ?? ""} onChange={e=>setServiceNotes(current=>({...current,[order.order_item_id]:e.target.value}))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"/>
+                {order.payment_status !== "paid" ? <p className="text-xs text-amber-700">You can begin fulfilment after payment is confirmed.</p> : order.service_status === "completed" ? <p className="text-sm font-semibold text-emerald-700">Customer marked this service as completed.</p> : <div className="flex flex-wrap gap-2">
+                  <button onClick={()=>saveService(order,"in_progress")} disabled={saving===order.order_item_id} className="rounded-full border border-teal-700 px-4 py-2 text-sm font-bold text-teal-800 disabled:opacity-50">{saving===order.order_item_id ? "Saving..." : "Start / update work"}</button>
+                  <button onClick={()=>saveService(order,"submitted")} disabled={saving===order.order_item_id || !(serviceNotes[order.order_item_id] ?? order.service_seller_note ?? "").trim()} className="rounded-full bg-teal-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Submit work to customer</button>
+                </div>}
+                <p className="text-xs text-slate-500">Revision requests: {order.service_revision_count || 0} · Submitted: {order.service_submitted_at ? new Date(order.service_submitted_at).toLocaleString() : "Not yet"}</p>
+              </div>}
+              {order.product_type === "digital" && <p className="mt-4 border-t border-slate-100 pt-4 text-xs text-slate-500">Digital files are delivered through the customer’s secure downloads area.</p>}
             </article>)
           }
         </section>
