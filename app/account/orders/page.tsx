@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Download, PackageCheck, RefreshCw, Search, ChevronDown, ChevronUp, CheckCircle2, Clock3 } from "lucide-react";
 
 type DownloadItem = {
@@ -15,6 +16,8 @@ type DownloadItem = {
 type OrderItem = {
   id: string; product_title: string; quantity: number; unit_price: number | string; currency: string;
   product_type?: string; item_fulfillment_status?: string; shipping_carrier?: string | null; tracking_number?: string | null; tracking_url?: string | null; seller_fulfillment_note?: string | null; shipped_at?: string | null; delivered_at?: string | null;
+  service_status?: string; service_seller_note?: string | null; service_customer_note?: string | null;
+  service_submitted_at?: string | null; service_completed_at?: string | null; service_revision_count?: number;
   downloads: DownloadItem[];
 };
 type Order = {
@@ -30,6 +33,9 @@ export default function OrderHistoryPage() {
   const [filter, setFilter] = useState<"all" | "paid" | "pending">("all");
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
+  const [serviceNotes, setServiceNotes] = useState<Record<string, string>>({});
+  const [serviceSaving, setServiceSaving] = useState<string | null>(null);
+  const [serviceNotice, setServiceNotice] = useState("");
 
   async function loadOrders() {
     setLoading(true); setError("");
@@ -61,6 +67,19 @@ export default function OrderHistoryPage() {
     }
   }
 
+  async function respondToService(item: OrderItem, action: "revision_requested" | "completed") {
+    setServiceSaving(item.id); setError(""); setServiceNotice("");
+    const supabase = createClient();
+    const { error: responseError } = await supabase.rpc("respond_to_service_delivery", {
+      p_order_item_id: item.id,
+      p_action: action,
+      p_note: serviceNotes[item.id] || null,
+    });
+    if (responseError) setError(responseError.message);
+    else { setServiceNotice(action === "completed" ? "You confirmed the service as completed." : "Your revision request was sent to the seller."); await loadOrders(); }
+    setServiceSaving(null);
+  }
+
   const money = (amount: number | string, currency: string) =>
     new Intl.NumberFormat("en", { style: "currency", currency }).format(Number(amount));
 
@@ -89,7 +108,7 @@ export default function OrderHistoryPage() {
         <div><h1 className="text-4xl font-extrabold tracking-tight text-ink">My orders</h1><p className="mt-2 text-sm text-slate-500">Review purchases, check payment progress and access your files.</p></div>
         <button onClick={loadOrders} disabled={loading} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:border-teal disabled:opacity-50"><RefreshCw size={15}/>Refresh</button>
       </div>
-      {error && <p role="alert" className="mt-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
+      {error && <p role="alert" className="mt-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}{serviceNotice && <p role="status" className="mt-3 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{serviceNotice}</p>}
       {!loading && orders.length > 0 && <div className="mt-7 space-y-3">
         <div className="relative"><Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by order reference or product" className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none focus:border-teal"/></div>
         <div className="flex flex-wrap gap-2">
@@ -126,11 +145,28 @@ export default function OrderHistoryPage() {
               </div>
             </div>
             {isOpen && <div className="border-t border-slate-100 bg-slate-50/70 p-6 md:p-8">
-              <h3 className="mb-4 text-sm font-extrabold text-ink">Products, delivery and downloads</h3>
+              <h3 className="mb-4 text-sm font-extrabold text-ink">Products, delivery, services and downloads</h3>
               <div className="space-y-5">
                 {order.items.map(item => <div key={item.id}>
                   <div className="flex flex-wrap justify-between gap-2"><div><h4 className="font-bold text-ink">{item.product_title}</h4><p className="mt-1 text-xs text-slate-500">Quantity: {item.quantity}</p></div><p className="text-sm font-semibold text-slate-600">{money(Number(item.unit_price) * item.quantity, item.currency)}</p></div>
                   {isPaid && item.product_type === "physical" && <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Delivery progress</p><p className="mt-2 text-sm font-bold capitalize text-ink">{(item.item_fulfillment_status || "unfulfilled").replaceAll("_", " ")}</p>{item.shipping_carrier && <p className="mt-1 text-xs text-slate-600">Carrier: {item.shipping_carrier}</p>}{item.tracking_number && <p className="mt-1 text-xs text-slate-600">Tracking number: {item.tracking_number}</p>}{item.tracking_url && <a href={item.tracking_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-bold text-teal underline">Track shipment</a>}{item.shipped_at && <p className="mt-1 text-xs text-slate-500">Shipped {new Date(item.shipped_at).toLocaleString()}</p>}{item.delivered_at && <p className="mt-1 text-xs text-slate-500">Delivered {new Date(item.delivered_at).toLocaleString()}</p>}{item.seller_fulfillment_note && <p className="mt-2 text-xs text-slate-600">{item.seller_fulfillment_note}</p>}</div>}
+                  {isPaid && item.product_type === "online_service" && <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Online-service progress</p>
+                    <p className="mt-2 text-sm font-bold capitalize text-ink">{(item.service_status || "not_started").replaceAll("_"," ")}</p>
+                    {item.service_seller_note && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{item.service_seller_note}</p>}
+                    {item.service_submitted_at && <p className="mt-2 text-xs text-slate-500">Submitted {new Date(item.service_submitted_at).toLocaleString()}</p>}
+                    {item.service_status === "submitted" && <div className="mt-3 space-y-2">
+                      <textarea aria-label="Service review or revision instructions" rows={3} placeholder="If you need a change, explain it here..." value={serviceNotes[item.id] || ""} onChange={e=>setServiceNotes(current=>({...current,[item.id]:e.target.value}))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"/>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={()=>respondToService(item,"revision_requested")} disabled={serviceSaving===item.id || !(serviceNotes[item.id] || "").trim()} className="rounded-full border border-amber-500 px-4 py-2 text-xs font-bold text-amber-700 disabled:opacity-50">Request a revision</button>
+                        <button onClick={()=>respondToService(item,"completed")} disabled={serviceSaving===item.id} className="rounded-full bg-teal px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{serviceSaving===item.id ? "Saving..." : "Accept and complete"}</button>
+                      </div>
+                    </div>}
+                    {item.service_status === "completed" && <p className="mt-2 text-sm font-semibold text-emerald-700">You marked this service as completed.</p>}
+                    {item.service_status === "revision_requested" && <p className="mt-2 text-xs text-amber-700">Your revision request has been sent. The seller will update the work and submit it again.</p>}
+                    {(item.service_status === "not_started" || item.service_status === "in_progress") && <p className="mt-2 text-xs text-slate-500">The seller will submit the work here when it is ready for your review.</p>}
+                    <p className="mt-2 text-xs text-slate-400">Revisions requested: {item.service_revision_count || 0}</p>
+                  </div>}
                   {isPaid && item.downloads.length > 0 && <div className="mt-3 space-y-2">
                     {item.downloads.map(d => {
                       const unavailable = !!d.revoked_at || (!!d.expires_at && new Date(d.expires_at) <= new Date()) || (!!d.max_downloads && d.download_count >= d.max_downloads);
