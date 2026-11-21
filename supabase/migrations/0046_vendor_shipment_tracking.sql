@@ -16,6 +16,11 @@ alter table public.order_items
   add constraint order_items_item_fulfillment_status_check
   check (item_fulfillment_status in ('unfulfilled', 'processing', 'shipped', 'delivered', 'fulfilled'));
 
+update public.order_items oi
+set vendor_id = p.vendor_id
+from public.products p
+where p.id = oi.product_id and oi.vendor_id is null;
+
 create index if not exists order_items_vendor_fulfillment_idx
   on public.order_items(vendor_id, item_fulfillment_status);
 
