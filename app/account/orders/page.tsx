@@ -19,6 +19,7 @@ type OrderItem = {
   service_status?: string; service_seller_note?: string | null; service_customer_note?: string | null;
   service_submitted_at?: string | null; service_completed_at?: string | null; service_revision_count?: number;
   downloads: DownloadItem[];
+  service_deliverables?: { id: string; file_name: string; content_type: string | null; size_bytes: number; created_at: string }[];
 };
 type Order = {
   id: string; reference: string; amount: number | string; currency: string; payment_status: string;
@@ -62,6 +63,20 @@ export default function OrderHistoryPage() {
       window.location.assign(result.url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Download could not be prepared.");
+    } finally {
+      setDownloading(null);
+    }
+  }
+
+  async function downloadServiceDeliverable(deliverableId: string) {
+    setDownloading(deliverableId); setError("");
+    try {
+      const response = await fetch("/api/service-deliverables/" + deliverableId, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Delivery download could not be prepared.");
+      window.location.assign(result.url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delivery download could not be prepared.");
     } finally {
       setDownloading(null);
     }
@@ -155,6 +170,13 @@ export default function OrderHistoryPage() {
                     <p className="mt-2 text-sm font-bold capitalize text-ink">{(item.service_status || "not_started").replaceAll("_"," ")}</p>
                     {item.service_seller_note && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{item.service_seller_note}</p>}
                     {item.service_submitted_at && <p className="mt-2 text-xs text-slate-500">Submitted {new Date(item.service_submitted_at).toLocaleString()}</p>}
+                    {(item.service_deliverables || []).length > 0 && <div className="mt-3 space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Files delivered by the seller</p>
+                      {(item.service_deliverables || []).map(file=><div key={file.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-3">
+                        <div className="min-w-0"><p className="truncate text-sm font-semibold text-ink">{file.file_name}</p><p className="text-xs text-slate-500">{(file.size_bytes / 1024 / 1024).toFixed(2)} MB · {new Date(file.created_at).toLocaleString()}</p></div>
+                        <button onClick={()=>downloadServiceDeliverable(file.id)} disabled={downloading===file.id} className="inline-flex items-center gap-2 rounded-full bg-teal px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Download size={14}/>{downloading===file.id ? "Preparing..." : "Download file"}</button>
+                      </div>)}
+                    </div>}
                     {item.service_status === "submitted" && <div className="mt-3 space-y-2">
                       <textarea aria-label="Service review or revision instructions" rows={3} placeholder="If you need a change, explain it here..." value={serviceNotes[item.id] || ""} onChange={e=>setServiceNotes(current=>({...current,[item.id]:e.target.value}))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"/>
                       <div className="flex flex-wrap gap-2">
