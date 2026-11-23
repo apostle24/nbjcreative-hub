@@ -131,9 +131,12 @@ export default function BusinessWorkspacePage() {
           .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public").single();
 
     if (result.error) {
+      const databaseDetail = [result.error.message, result.error.details, result.error.hint]
+        .filter(Boolean)
+        .join(" ");
       setError(result.error.code === "23505"
         ? "A business workspace already exists for this account, or that business address is already taken."
-        : "We couldn't save your business workspace. Please check the details and try again.");
+        : `We couldn't save your business workspace. Database response: ${databaseDetail || "No additional details returned"} (code: ${result.error.code || "unknown"}).`);
     } else {
       setWorkspace(result.data as Workspace);
       setNotice("Your business workspace has been saved.");
