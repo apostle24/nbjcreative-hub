@@ -40,6 +40,7 @@ type VendorOrder = {
 };
 
 type FulfillmentForm = { status: string; carrier: string; trackingNumber: string; trackingUrl: string; note: string };
+type ServiceDeliverable = { id: string; order_item_id: string; file_name: string; content_type: string | null; size_bytes: number; created_at: string };
 const money = (value: number, currency: string) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency }).format(value);
 const emptyForm = (order: VendorOrder): FulfillmentForm => ({
@@ -60,6 +61,8 @@ export default function VendorOrdersPage() {
   const [forms, setForms] = useState<Record<string, FulfillmentForm>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [serviceNotes, setServiceNotes] = useState<Record<string, string>>({});
+  const [serviceFiles, setServiceFiles] = useState<Record<string, ServiceDeliverable[]>>({});
+  const [serviceUploadFiles, setServiceUploadFiles] = useState<Record<string, File | null>>({});
 
   async function loadOrders() {
     setLoading(true);
@@ -78,6 +81,15 @@ export default function VendorOrdersPage() {
     else {
       const rows = (data ?? []) as VendorOrder[];
       setOrders(rows);
+      const filesResponse = await fetch("/api/vendor/service-deliverables", { cache: "no-store" });
+      if (filesResponse.ok) {
+        const filesResult = await filesResponse.json();
+        const grouped: Record<string, ServiceDeliverable[]> = {};
+        for (const file of (filesResult.deliverables || []) as ServiceDeliverable[]) {
+          grouped[file.order_item_id] = [...(grouped[file.order_item_id] || []), file];
+        }
+        setServiceFiles(grouped);
+      }
       setForms(current => {
         const next = { ...current };
         rows.forEach(row => { if (!next[row.order_item_id]) next[row.order_item_id] = emptyForm(row); });
@@ -105,6 +117,35 @@ export default function VendorOrdersPage() {
     if (saveError) setError(saveError.message);
     else { setNotice("Service update saved for " + order.order_reference + "."); await loadOrders(); }
     setSaving(null);
+  }
+
+  async function uploadServiceFile(order: VendorOrder) {
+    const file = serviceUploadFiles[order.order_item_id];
+    if (!file) { setError("Choose a delivery file first."); return; }
+    setSaving(order.order_item_id); setError(""); setNotice("");
+    try {
+      const body = new FormData();
+      body.append("orderItemId", order.order_item_id);
+      body.append("file", file);
+      const response = await fetch("/api/vendor/service-deliverables", { method: "POST", body });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "File upload failed.");
+      setServiceUploadFiles(current => ({ ...current, [order.order_item_id]: null }));
+      setNotice("Delivery file uploaded for " + order.order_reference + ".");
+      const filesResponse = await fetch("/api/vendor/service-deliverables", { cache: "no-store" });
+      if (filesResponse.ok) {
+        const filesResult = await filesResponse.json();
+        const grouped: Record<string, ServiceDeliverable[]> = {};
+        for (const item of (filesResult.deliverables || []) as ServiceDeliverable[]) {
+          grouped[item.order_item_id] = [...(grouped[item.order_item_id] || []), item];
+        }
+        setServiceFiles(grouped);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "File upload failed.");
+    } finally {
+      setSaving(null);
+    }
   }
 
   async function saveFulfillment(order: VendorOrder) {
@@ -183,6 +224,16 @@ export default function VendorOrdersPage() {
                 <p className="text-sm font-semibold capitalize text-teal-800">Status: {order.service_status.replaceAll("_"," ")}</p>
                 {order.service_customer_note && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Customer revision request: {order.service_customer_note}</p>}
                 {order.service_seller_note && <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">Your latest delivery note: {order.service_seller_note}</p>}
+                {order.payment_status === "paid" && order.service_status === "in_progress" && <div className="rounded-xl border border-dashed border-teal-300 bg-teal-50/40 p-4">
+                  <h5 className="text-sm font-bold text-slate-800">Attach completed work</h5>
+                  <p className="mt-1 text-xs text-slate-500">Upload up to 10 files, maximum 50 MB each. Supported: PDF, Office documents, ZIP, TXT, CSV, JPG, PNG and WebP.</p>
+                  <input type="file" accept=".pdf,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.webp" onChange={e=>setServiceUploadFiles(current=>({...current,[order.order_item_id]:e.target.files?.[0] || null}))} className="mt-3 block w-full text-sm"/>
+                  <button onClick={()=>uploadServiceFile(order)} disabled={saving===order.order_item_id || !serviceUploadFiles[order.order_item_id] || (serviceFiles[order.order_item_id] || []).length>=10} className="mt-3 rounded-full border border-teal-700 px-4 py-2 text-sm font-bold text-teal-800 disabled:opacity-50">{saving===order.order_item_id ? "Uploading..." : "Upload delivery file"}</button>
+                </div>}
+                {(serviceFiles[order.order_item_id] || []).length > 0 && <div className="rounded-xl bg-slate-50 p-4">
+                  <h5 className="text-sm font-bold text-slate-800">Uploaded delivery files</h5>
+                  <ul className="mt-2 space-y-1">{(serviceFiles[order.order_item_id] || []).map(file=><li key={file.id} className="text-xs text-slate-600">{file.file_name} · {(file.size_bytes / 1024 / 1024).toFixed(2)} MB</li>)}</ul>
+                </div>}
                 <textarea aria-label="Service update message" rows={3} placeholder="Describe the work completed or update the customer..." value={serviceNotes[order.order_item_id] ?? order.service_seller_note ?? ""} onChange={e=>setServiceNotes(current=>({...current,[order.order_item_id]:e.target.value}))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"/>
                 {order.payment_status !== "paid" ? <p className="text-xs text-amber-700">You can begin fulfilment after payment is confirmed.</p> : order.service_status === "completed" ? <p className="text-sm font-semibold text-emerald-700">Customer marked this service as completed.</p> : order.service_status === "submitted" ? <p className="text-sm font-semibold text-sky-700">Work has been submitted. Waiting for the customer to review it.</p> : <div className="flex flex-wrap gap-2">
                   {(order.service_status === "not_started" || order.service_status === "revision_requested") && <button onClick={()=>saveService(order,"in_progress")} disabled={saving===order.order_item_id} className="rounded-full border border-teal-700 px-4 py-2 text-sm font-bold text-teal-800 disabled:opacity-50">{saving===order.order_item_id ? "Saving..." : order.service_status === "revision_requested" ? "Start requested revision" : "Start work"}</button>}
