@@ -129,6 +129,26 @@ export default function Home() {
       </div>
     </section>
 
+    <section id="ecosystem" className="container py-16">
+      <div className="mb-8">
+        <p className="eyebrow mb-3">Explore the NBJ ecosystem</p>
+        <h2 className="section-title">Five connected ways to create opportunity.</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">One account gives you access to the services that help you buy and sell, build skills, find work, grow a business and manage your store.</p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {[
+          {title:"Marketplace",description:"Discover physical products, digital resources and professional services.",href:"/marketplace",icon:<ShoppingBag/>},
+          {title:"NBJ Work",description:"Find jobs and projects, build your profile and connect with employers.",href:"/work",icon:<BriefcaseBusiness/>},
+          {title:"NBJ Academy",description:"Teach, learn new skills, access courses and earn certificates.",href:"/academy",icon:<GraduationCap/>},
+          {title:"NBJ Business",description:"Establish your business presence and grow customer connections.",href:"/business",icon:<Building2/>},
+          {title:"Vendor Centre",description:"Set up your store and manage products, orders and sales.",href:"/vendor",icon:<Store/>}
+        ].map(item=><Link key={item.href} href={item.href} className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-teal-300 hover:shadow-soft"><span className="inline-flex rounded-xl bg-[#E8F2F0] p-3 text-teal">{item.icon}</span><h3 className="mt-4 font-bold text-ink">{item.title}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{item.description}</p><span className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-teal">Explore service <ArrowRight size={14}/></span></Link>)}
+      </div>
+      <div className="mt-6">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-bold text-white hover:bg-teal"><LayoutDashboard size={16}/> Open central dashboard <ArrowRight size={15}/></Link>
+      </div>
+    </section>
+
     <section id="categories" className="container py-20">
       <div className="flex flex-wrap justify-between items-end gap-5 mb-9"><div><p className="eyebrow mb-3">Explore the collection</p><h2 className="section-title">Find the right tools for<br className="hidden sm:block"/> your next step.</h2></div><a href="#shop" className="text-sm font-bold text-teal">View all products <ArrowRight size={15} className="inline ml-1"/></a></div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -155,19 +175,6 @@ export default function Home() {
       </div>
     </section>
 
-
-    <section className="container py-16">
-      <div className="mb-8"><p className="eyebrow mb-3">Explore the NBJ ecosystem</p><h2 className="section-title">One hub. All your workspaces.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">One account connects you to opportunities to buy, sell, learn, work and grow your business.</p></div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {title:"NBJ Work",description:"Jobs, projects and professional profiles",href:"/work",icon:<BriefcaseBusiness/>},
-          {title:"NBJ Academy",description:"Courses, learning and certificates",href:"/academy",icon:<GraduationCap/>},
-          {title:"Vendor Centre",description:"Seller workspace and product management",href:"/vendor",icon:<Store/>},
-          {title:"NBJ Business",description:"Establish, showcase and grow your business",href:"/business",icon:<Building2/>}
-        ].map(item=><Link key={item.href} href={item.href} className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-teal-300 hover:shadow-soft"><span className="inline-flex rounded-xl bg-[#E8F2F0] p-3 text-teal">{item.icon}</span><h3 className="mt-4 font-bold text-ink">{item.title}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{item.description}</p><span className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-teal">Open workspace <ArrowRight size={14}/></span></Link>)}
-      </div>
-      <div className="mt-6"><Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-bold text-white hover:bg-teal"><LayoutDashboard size={16}/> Open central dashboard <ArrowRight size={15}/></Link></div>
-    </section>
 
     <section id="about" className="container py-20 grid md:grid-cols-2 gap-12 items-center">
       <div className="rounded-[28px] bg-ink p-9 md:p-12 text-white"><p className="text-teal-200 text-xs font-extrabold tracking-[.16em]">OUR POINT OF VIEW</p><h2 className="mt-5 text-3xl md:text-4xl font-extrabold tracking-[-.04em] leading-tight">One connected platform. More ways to move forward.</h2><p className="mt-5 text-sm leading-7 text-slate-300">NBJCreative Hub brings commerce, education, work and business growth together in one connected global ecosystem.</p><a href="#categories" className="mt-8 inline-flex items-center gap-2 text-sm font-bold text-teal-200">Explore our departments <ArrowRight size={16}/></a></div>
