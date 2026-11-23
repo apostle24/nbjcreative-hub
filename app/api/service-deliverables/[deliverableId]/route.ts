@@ -24,9 +24,9 @@ export async function GET(
     if (!file) return NextResponse.json({ error: "This delivery file was not found." }, { status: 404 });
 
     const { data: item, error: itemError } = await admin.from("order_items")
-      .select("id,order_id,product_type").eq("id", file.order_item_id).maybeSingle();
+      .select("id,order_id,product_type,service_status").eq("id", file.order_item_id).maybeSingle();
     if (itemError) throw itemError;
-    if (!item || item.product_type !== "online_service") return NextResponse.json({ error: "This delivery is unavailable." }, { status: 404 });
+    if (!item || item.product_type !== "online_service" || !["submitted", "completed"].includes(item.service_status)) return NextResponse.json({ error: "This delivery is unavailable." }, { status: 404 });
 
     const { data: order, error: orderError } = await admin.from("orders")
       .select("customer_id,payment_status").eq("id", item.order_id).maybeSingle();
