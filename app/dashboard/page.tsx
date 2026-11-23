@@ -13,11 +13,11 @@ import {
 type Profile = { full_name?: string | null; role?: string | null; email?: string | null };
 
 const modules = [
-  { title: "Shop & Marketplace", description: "Discover digital products, browse categories and manage your purchases.", href: "/marketplace", icon: ShoppingBag, group: "Explore" },
-  { title: "NBJ Work", description: "Find jobs and freelance projects, apply and manage your professional profile.", href: "/work", icon: BriefcaseBusiness, group: "Explore" },
-  { title: "NBJ Academy", description: "Discover courses, continue learning and access your certificates.", href: "/academy", icon: GraduationCap, group: "Explore" },
+  { title: "Shop & Marketplace", description: "Buy physical products, digital resources and online services from one marketplace.", href: "/marketplace", icon: ShoppingBag, group: "Explore" },
+  { title: "NBJ Work", description: "Discover jobs and projects, build your professional profile and connect with employers.", href: "/work", icon: BriefcaseBusiness, group: "Explore" },
+  { title: "NBJ Academy", description: "Learn new skills, access courses and track your learning progress.", href: "/academy", icon: GraduationCap, group: "Explore" },
   { title: "Vendor Centre", description: "Manage your seller application, products, orders, sales and payouts.", href: "/vendor", icon: Store, group: "Your workspaces" },
-  { title: "NBJ Business", description: "Set up your business workspace and manage business operations.", href: "/business", icon: Building2, group: "Your workspaces" },
+  { title: "NBJ Business", description: "Establish your business presence, showcase what you offer and grow customer connections.", href: "/business", icon: Building2, group: "Your workspaces" },
   { title: "My Account", description: "Manage your profile, orders, wishlist, notifications and support.", href: "/account/profile", icon: CircleUserRound, group: "Your account" },
   { title: "Help & Support", description: "Find guidance or contact the NBJCreative Hub support team.", href: "/help", icon: LifeBuoy, group: "Your account" },
 ];
