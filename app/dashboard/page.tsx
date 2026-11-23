@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userEmail, setUserEmail] = useState("");
+  const [isApprovedVendor, setIsApprovedVendor] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -39,9 +40,13 @@ export default function DashboardPage() {
         return;
       }
       setUserEmail(user.email ?? "");
-      const { data } = await supabase.from("profiles").select("full_name,role,email").eq("id", user.id).maybeSingle();
+      const [{ data }, { data: vendor }] = await Promise.all([
+        supabase.from("profiles").select("full_name,role,email").eq("id", user.id).maybeSingle(),
+        supabase.from("vendor_profiles").select("status").eq("owner_id", user.id).maybeSingle()
+      ]);
       if (!active) return;
       setProfile(data ?? { email: user.email });
+      setIsApprovedVendor(vendor?.status === "approved");
       setLoading(false);
     }
     load();
@@ -82,7 +87,7 @@ export default function DashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{modules.map(item => { const Icon = item.icon; return <Link key={item.href} href={item.href} className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-lg"><div className="flex items-start justify-between"><span className="rounded-xl bg-teal-50 p-3 text-teal-800"><Icon size={23}/></span><ArrowRight size={18} className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-teal-700"/></div><p className="mt-5 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">{item.group}</p><h3 className="mt-1 text-lg font-extrabold">{item.title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p></Link>; })}</div>
       </section>
 
-      <section className="mt-10 grid gap-4 md:grid-cols-2"><Link href="/account/orders" className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-teal-300"><span className="rounded-xl bg-slate-100 p-3"><ShoppingBag/></span><span className="min-w-0 flex-1"><strong className="block">Orders & downloads</strong><small className="mt-1 block text-slate-500">Your purchases and digital files</small></span><ArrowRight size={18}/></Link><Link href="/account/work-applications" className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-teal-300"><span className="rounded-xl bg-slate-100 p-3"><BriefcaseBusiness/></span><span className="min-w-0 flex-1"><strong className="block">My Work applications</strong><small className="mt-1 block text-slate-500">Track your job and project applications</small></span><ArrowRight size={18}/></Link></section>
+      <section className="mt-10 grid gap-4 md:grid-cols-2"><Link href="/account/orders" className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-teal-300"><span className="rounded-xl bg-slate-100 p-3"><ShoppingBag/></span><span className="min-w-0 flex-1"><strong className="block">Customer: My Orders</strong><small className="mt-1 block text-slate-500">Track purchases, payments, downloads and service delivery</small></span><ArrowRight size={18}/></Link>{isApprovedVendor && <Link href="/vendor/orders" className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-teal-300"><span className="rounded-xl bg-slate-100 p-3"><Store/></span><span className="min-w-0 flex-1"><strong className="block">Seller: Manage Orders</strong><small className="mt-1 block text-slate-500">View customer orders and manage shipping and online-service work</small></span><ArrowRight size={18}/></Link>}<Link href="/account/work-applications" className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-teal-300"><span className="rounded-xl bg-slate-100 p-3"><BriefcaseBusiness/></span><span className="min-w-0 flex-1"><strong className="block">My Work applications</strong><small className="mt-1 block text-slate-500">Track your job and project applications</small></span><ArrowRight size={18}/></Link></section>
       <footer className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-6 text-xs text-slate-500"><span>NBJCreative Hub · One connected platform</span><div className="flex gap-4"><Link href="/help" className="hover:text-teal-700">Help Centre</Link><Link href="/" className="hover:text-teal-700">Public homepage</Link></div></footer>
     </div>
   </main>;
