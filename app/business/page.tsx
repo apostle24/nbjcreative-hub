@@ -128,7 +128,7 @@ export default function BusinessWorkspacePage() {
       ? await supabase.from("business_workspaces").update(payload).eq("id", workspace.id)
           .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public").single()
       : await supabase.from("business_workspaces").insert(payload)
-          .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency").single();
+          .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public").single();
 
     if (result.error) {
       setError(result.error.code === "23505"
