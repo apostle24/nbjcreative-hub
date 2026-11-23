@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
     const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
     const forwardedOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : "";
-    const origin = (configuredSiteUrl || forwardedOrigin || "https://nbjcreative-hub.onrender.com").replace(/\\/+$/, "");
+    const origin = configuredSiteUrl || forwardedOrigin || "https://nbjcreative-hub.onrender.com";
     const paystack = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: { Authorization: "Bearer " + secret, "Content-Type": "application/json" },
