@@ -48,7 +48,7 @@ export async function GET() {
 
     // Only expose private service-delivery metadata for the customer's paid online-service items.
     const paidServiceItemIds = (items || [])
-      .filter(i => paidOrderIds.has(i.order_id) && i.product_type === "online_service")
+      .filter(i => paidOrderIds.has(i.order_id) && i.product_type === "online_service" && ["submitted", "completed"].includes(i.service_status))
       .map(i => i.id);
     const { data: serviceFiles, error: serviceFilesError } = paidServiceItemIds.length
       ? await admin.from("service_deliverables")
