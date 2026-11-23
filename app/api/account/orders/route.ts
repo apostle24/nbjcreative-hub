@@ -46,10 +46,28 @@ export async function GET() {
       entitlementMap.set(entitlement.order_item_id, list);
     }
 
+    // Only expose private service-delivery metadata for the customer's paid online-service items.
+    const paidServiceItemIds = (items || [])
+      .filter(i => paidOrderIds.has(i.order_id) && i.product_type === "online_service")
+      .map(i => i.id);
+    const { data: serviceFiles, error: serviceFilesError } = paidServiceItemIds.length
+      ? await admin.from("service_deliverables")
+          .select("id,order_item_id,file_name,content_type,size_bytes,created_at")
+          .in("order_item_id", paidServiceItemIds)
+      : { data: [], error: null };
+    if (serviceFilesError) throw serviceFilesError;
+
+    const serviceFilesByItem = new Map<string, any[]>();
+    for (const file of serviceFiles || []) {
+      const list = serviceFilesByItem.get(file.order_item_id) || [];
+      list.push(file);
+      serviceFilesByItem.set(file.order_item_id, list);
+    }
+
     const itemsByOrder = new Map<string, any[]>();
     for (const item of items || []) {
       const list = itemsByOrder.get(item.order_id) || [];
-      list.push({ ...item, downloads: entitlementMap.get(item.id) || [] });
+      list.push({ ...item, downloads: entitlementMap.get(item.id) || [], service_deliverables: serviceFilesByItem.get(item.id) || [] });
       itemsByOrder.set(item.order_id, list);
     }
 
