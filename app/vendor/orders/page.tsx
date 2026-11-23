@@ -168,6 +168,7 @@ export default function VendorOrdersPage() {
   const visibleOrders = useMemo(() => filter === "all" ? orders : orders.filter(order =>
     filter === "paid" || filter === "pending" ? order.payment_status === filter :
     filter === "physical" ? order.product_type === "physical" :
+    filter === "online_service" ? order.product_type === "online_service" :
     order.item_fulfillment_status === filter
   ), [orders, filter]);
   const paidCount = new Set(orders.filter(o => o.payment_status === "paid").map(o => o.order_reference)).size;
