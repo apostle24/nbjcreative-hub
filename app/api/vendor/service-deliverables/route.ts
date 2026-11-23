@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     if (file.size < 1 || file.size > MAX_FILE_SIZE) return NextResponse.json({ error: "Each file must be no larger than 50 MB." }, { status: 400 });
 
     const name = safeName(file.name);
-    const extension = name.toLowerCase().match(/\\.[a-z0-9]+$/)?.[0] || "";
+    const extension = name.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] || "";
     const expectedType = ALLOWED_TYPES[extension];
     if (!expectedType || (file.type && file.type !== expectedType && !(extension === ".zip" && file.type === "application/x-zip-compressed"))) {
       return NextResponse.json({ error: "Unsupported file type. Use PDF, Office documents, ZIP, TXT, CSV, JPG, PNG or WebP." }, { status: 400 });
