@@ -154,6 +154,18 @@ export default function OrderHistoryPage() {
                 <div className="rounded-xl bg-mist p-3"><div className="flex items-center gap-2 text-xs font-bold text-slate-700">{isPaid ? <CheckCircle2 size={15} className="text-emerald-600"/> : <Clock3 size={15} className="text-amber-600"/>} Payment {isPaid ? "confirmed" : "pending"}</div><p className="mt-1 text-xs text-slate-500">{order.paid_at ? "Paid " + new Date(order.paid_at).toLocaleString() : "Awaiting payment confirmation."}</p></div>
                 <div className="rounded-xl bg-mist p-3"><div className="flex items-center gap-2 text-xs font-bold text-slate-700">{hasDownloads ? <CheckCircle2 size={15} className="text-emerald-600"/> : <Clock3 size={15} className="text-slate-400"/>} Digital access</div><p className="mt-1 text-xs text-slate-500">{hasDownloads ? "Your files are available below." : isPaid ? "No files are available for this order yet." : "Available after confirmed payment."}</p></div>
               </div>
+              {isPaid && order.items.some(item => item.downloads.length > 0) && <div className="mt-5 rounded-xl border border-teal/20 bg-teal/5 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-extrabold text-ink"><Download size={16} className="text-teal"/> Your digital downloads</div>
+                <div className="space-y-2">
+                  {order.items.flatMap(item => item.downloads.map(d => ({ item, download: d }))).map(({ item, download: d }) => {
+                    const unavailable = !!d.revoked_at || (!!d.expires_at && new Date(d.expires_at) <= new Date()) || (!!d.max_downloads && d.download_count >= d.max_downloads);
+                    return <div key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-3">
+                      <div className="min-w-0"><p className="truncate text-sm font-semibold text-ink">{d.file?.file_name || item.product_title}</p><p className="text-xs text-slate-500">{item.product_title} · {d.download_count} downloads{d.max_downloads ? " of " + d.max_downloads : ""}</p></div>
+                      <button onClick={() => download(d.id)} disabled={downloading === d.id || unavailable} className="inline-flex items-center gap-2 rounded-full bg-teal px-4 py-2.5 text-xs font-bold text-white hover:bg-ink disabled:cursor-not-allowed disabled:opacity-50"><Download size={14}/>{downloading === d.id ? "Preparing..." : unavailable ? "Unavailable" : "Download"}</button>
+                    </div>;
+                  })}
+                </div>
+              </div>}
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-slate-600">{order.items.length} {order.items.length === 1 ? "product" : "products"} in this order</p>
                 <button onClick={() => toggleDetails(order.id)} aria-expanded={isOpen} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-bold text-ink hover:border-teal">{isOpen ? "Hide order details" : "View order details"}{isOpen ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</button>
