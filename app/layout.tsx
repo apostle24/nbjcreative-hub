@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NBJCreative Hub | Digital products for your next big idea",
-  description: "Discover practical digital products, creative resources and tools for business, work, learning and everyday life.",
+  title: "NBJCreative Hub | Create. Learn. Earn. Work. Grow.",
+  description: "A connected global platform for commerce, education, professional opportunities and business growth. Create. Learn. Earn. Work. Grow.",
   metadataBase: new URL("https://nbjcreative.com")
 };
 
