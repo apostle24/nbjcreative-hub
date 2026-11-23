@@ -16,6 +16,7 @@ type Workspace = {
   contact_email: string | null;
   contact_phone: string | null;
   default_currency: string;
+  is_public: boolean;
 };
 
 const industries = [
@@ -45,6 +46,7 @@ export default function BusinessWorkspacePage() {
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [currency, setCurrency] = useState("GHS");
+  const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -60,7 +62,7 @@ export default function BusinessWorkspacePage() {
       }
       const { data, error: loadError } = await supabase
         .from("business_workspaces")
-        .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency")
+        .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public")
         .eq("owner_id", user.id)
         .maybeSingle();
       if (!active) return;
@@ -77,6 +79,7 @@ export default function BusinessWorkspacePage() {
         setContactEmail(item.contact_email ?? "");
         setContactPhone(item.contact_phone ?? "");
         setCurrency(item.default_currency ?? "GHS");
+        setIsPublic(item.is_public ?? false);
       }
       setLoading(false);
     }
@@ -118,11 +121,12 @@ export default function BusinessWorkspacePage() {
       website_url: safeWebsite,
       contact_email: contactEmail.trim() || null,
       contact_phone: contactPhone.trim() || null,
-      default_currency: currency
+      default_currency: currency,
+      is_public: isPublic
     };
     const result = workspace
       ? await supabase.from("business_workspaces").update(payload).eq("id", workspace.id)
-          .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency").single()
+          .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public").single()
       : await supabase.from("business_workspaces").insert(payload)
           .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency").single();
 
@@ -146,7 +150,8 @@ export default function BusinessWorkspacePage() {
         <div className="mt-6 rounded-3xl bg-slate-950 p-8 text-white">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-300">Create · Manage · Grow</p>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">NBJ Business</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Your central workspace for managing your business, organising operations and growing with NBJCreative Hub.</p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Build your business presence, reach customers and connect with opportunities through NBJCreative Hub.</p>
+          <Link href="/businesses" className="mt-5 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">Discover businesses →</Link>
         </div>
 
         <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -189,6 +194,15 @@ export default function BusinessWorkspacePage() {
             <label className="text-sm font-semibold text-slate-700">Business email
               <input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-600" placeholder="business@example.com"/>
             </label>
+            <div className="sm:col-span-2 rounded-2xl border border-teal-100 bg-teal-50/60 p-5">
+              <label className="flex items-start gap-3 text-sm font-semibold text-slate-800">
+                <input type="checkbox" checked={isPublic} onChange={e=>setIsPublic(e.target.checked)} className="mt-1 h-4 w-4 accent-teal-700"/>
+                <span>Show my business in the public NBJ Business directory
+                  <span className="mt-1 block text-xs font-normal leading-5 text-slate-600">When enabled, visitors can discover your business name, description, industry, location and website. Your account details, business email and phone number remain private.</span>
+                </span>
+              </label>
+              {workspace?.is_public && <Link href={"/business/"+workspace.business_slug} className="mt-3 inline-block text-xs font-bold text-teal-800 hover:underline">View your public business profile →</Link>}
+            </div>
             <label className="text-sm font-semibold text-slate-700">Business phone
               <input value={contactPhone} onChange={e=>setContactPhone(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-600" placeholder="+233..."/>
             </label>
@@ -202,9 +216,9 @@ export default function BusinessWorkspacePage() {
 
         <section className="mt-6 grid gap-4 sm:grid-cols-3">
           {[
-            ["Business finances","Track income, expenses and budgets."],
-            ["Products & services","Organise your catalogue and offerings."],
-            ["Customers & sales","Manage customer records and sales activity."]
+            ["Business finances","Optional tools to understand business income and expenses."],
+            ["Products & services","Connect your business offerings with the NBJ marketplace."],
+            ["Customers & growth","Build your public presence and connect with potential customers."]
           ].map(([title,body])=><div key={title} className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-bold text-slate-900">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{body}</p><span className="mt-4 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Coming next</span></div>)}
         </section>
       </div>
