@@ -204,3 +204,10 @@ Before implementing a new feature, inspect the existing code, database schema, R
 - Work verification PATCH currently saves the verification status and then separately updates the employer's public `is_verified` flag. If the second write fails, the route reports partial failure; consider moving both writes into one database transaction.
 - Admin route authorization is present in the inspected endpoints, but the remaining Admin pages/routes and their underlying table grants still require a complete review.
 
+
+
+### Additional Academy certificate review
+
+- Certificate issuance function checks that the requesting user owns an active enrolment, requires lesson completion and passing all published quizzes, and creates one certificate per enrolment.
+- The certificate issuance function is declared `SECURITY DEFINER` with `search_path = public`, unlike the stricter empty-search-path convention used by most newer functions. Review and harden its search path and explicit execute grants/revokes in a later migration after confirming the live migration state.
+- Certificate verification as a public, tamper-resistant lookup journey has not yet been confirmed; the current inspected migration establishes issuance and owner/instructor read access, not a complete public verification workflow.
