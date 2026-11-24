@@ -41,7 +41,13 @@ export async function POST(request: Request) {
     });
     if (insertError) return NextResponse.json({ error: "We couldn't create your course payment. Please try again." }, { status: 500 });
 
-    const origin = new URL(request.url).origin;
+    // Use the configured public site URL for gateway callbacks. On hosted
+    // platforms request.url can reflect an internal localhost origin.
+    const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+    const forwardedOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : "";
+    const origin = configuredSiteUrl || forwardedOrigin || "https://nbjcreative-hub.onrender.com";
     const paystack = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: { Authorization: "Bearer " + secret, "Content-Type": "application/json" },
