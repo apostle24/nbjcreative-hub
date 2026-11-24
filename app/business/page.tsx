@@ -192,6 +192,7 @@ export default function BusinessWorkspacePage() {
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/businesses" className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">Discover businesses →</Link>
             {workspace && <Link href="/business/enquiries" className="inline-flex rounded-full bg-teal-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-teal-400">View customer enquiries →</Link>}
+            {workspace && <Link href="/vendor/products" className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">Manage products & services →</Link>}
           </div>
         </div>
 
@@ -258,9 +259,9 @@ export default function BusinessWorkspacePage() {
         <section className="mt-6 grid gap-4 sm:grid-cols-3">
           {[
             ["Business finances","Optional tools to understand business income and expenses."],
-            ["Products & services","Connect your business offerings with the NBJ marketplace."],
+            ["Products & services","Publish products and online services through Vendor Centre; published listings can appear on your public business profile."],
             ["Customers & growth","Build your public presence and connect with potential customers."]
-          ].map(([title,body])=><div key={title} className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-bold text-slate-900">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{body}</p><span className="mt-4 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Coming next</span></div>)}
+          ].map(([title,body])=><div key={title} className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-bold text-slate-900">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{body}</p>{title === "Products & services" && workspace ? <Link href="/vendor/products" className="mt-4 inline-block text-sm font-bold text-teal-700 hover:underline">Manage offerings →</Link> : <span className="mt-4 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Coming next</span>}</div>)}
         </section>
       </div>
     </main>
