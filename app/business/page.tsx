@@ -138,11 +138,19 @@ export default function BusinessWorkspacePage() {
     };
     const { data: databaseAuthContext, error: databaseAuthError } = await supabase.rpc("get_business_workspace_auth_context");
 
-    const result = workspace
+    const workspaceSelect = "id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public";
+    const writeResult = workspace
       ? await supabase.from("business_workspaces").update(payload).eq("id", workspace.id)
-          .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public").single()
-      : await supabase.from("business_workspaces").insert(payload)
-          .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public").single();
+      : await supabase.from("business_workspaces").insert(payload);
+
+    // Keep INSERT/UPDATE separate from SELECT so an RLS failure on RETURNING
+    // can be distinguished from a failure of the write policy itself.
+    const result = writeResult.error
+      ? { data: null, error: writeResult.error }
+      : await supabase.from("business_workspaces")
+          .select(workspaceSelect)
+          .eq("owner_id", user.id)
+          .single();
 
     if (result.error) {
       const databaseDetail = [result.error.message, result.error.details, result.error.hint]
