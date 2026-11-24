@@ -189,7 +189,10 @@ export default function BusinessWorkspacePage() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-300">Create · Manage · Grow</p>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">NBJ Business</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Build your business presence, reach customers and connect with opportunities through NBJCreative Hub.</p>
-          <Link href="/businesses" className="mt-5 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">Discover businesses →</Link>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href="/businesses" className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">Discover businesses →</Link>
+            {workspace && <Link href="/business/enquiries" className="inline-flex rounded-full bg-teal-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-teal-400">View customer enquiries →</Link>}
+          </div>
         </div>
 
         <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
