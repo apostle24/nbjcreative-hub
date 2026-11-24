@@ -4,6 +4,16 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
+type BusinessOverview = {
+  published_offerings_count: number;
+  total_enquiries: number;
+  new_enquiries: number;
+  in_progress_enquiries: number;
+  paid_orders_count: number;
+  pending_orders_count: number;
+  sales_by_currency: { currency: string; total: number; items_sold: number }[];
+};
+
 type Workspace = {
   id: string;
   business_name: string;
@@ -37,6 +47,8 @@ export default function BusinessWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [overview, setOverview] = useState<BusinessOverview | null>(null);
+  const [overviewError, setOverviewError] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [description, setDescription] = useState("");
   const [industry, setIndustry] = useState("");
@@ -70,6 +82,10 @@ export default function BusinessWorkspacePage() {
       if (data) {
         const item = data as Workspace;
         setWorkspace(item);
+        const { data: overviewData, error: overviewLoadError } = await supabase.rpc("get_business_workspace_overview", { p_workspace_id: item.id });
+        if (!active) return;
+        if (overviewLoadError) setOverviewError("Business performance figures are temporarily unavailable.");
+        else setOverview(overviewData as BusinessOverview);
         setBusinessName(item.business_name);
         setDescription(item.description ?? "");
         setIndustry(item.industry ?? "");
@@ -193,8 +209,31 @@ export default function BusinessWorkspacePage() {
             <Link href="/businesses" className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">Discover businesses →</Link>
             {workspace && <Link href="/business/enquiries" className="inline-flex rounded-full bg-teal-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-teal-400">View customer enquiries →</Link>}
             {workspace && <Link href="/vendor/products" className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">Manage products & services →</Link>}
+            {workspace && <Link href="/vendor/orders" className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">Manage sales & orders →</Link>}
           </div>
         </div>
+
+        {workspace && <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-teal-700">Business performance</p>
+              <h2 className="mt-2 text-2xl font-extrabold text-slate-900">Your business at a glance</h2>
+              <p className="mt-2 text-sm text-slate-500">Live figures from your published Marketplace listings, customer enquiries and paid orders.</p>
+            </div>
+            <Link href="/business/enquiries" className="text-sm font-bold text-teal-700 hover:underline">Open enquiry inbox →</Link>
+          </div>
+          {overviewError ? <p className="mt-5 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{overviewError}</p> : overview ? <>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-semibold text-slate-500">Published offerings</p><p className="mt-2 text-3xl font-extrabold text-slate-950">{overview.published_offerings_count}</p><Link href="/vendor/products" className="mt-2 inline-block text-xs font-bold text-teal-700">Manage listings →</Link></div>
+              <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-semibold text-slate-500">Customer enquiries</p><p className="mt-2 text-3xl font-extrabold text-slate-950">{overview.total_enquiries}</p><p className="mt-2 text-xs text-slate-500">{overview.new_enquiries} new · {overview.in_progress_enquiries} in progress</p></div>
+              <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-semibold text-slate-500">Paid orders</p><p className="mt-2 text-3xl font-extrabold text-slate-950">{overview.paid_orders_count}</p><p className="mt-2 text-xs text-slate-500">{overview.pending_orders_count} pending payment</p><Link href="/vendor/orders" className="mt-2 inline-block text-xs font-bold text-teal-700">Manage orders →</Link></div>
+              <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-semibold text-slate-500">Marketplace sales</p>
+                {overview.sales_by_currency.length ? overview.sales_by_currency.map(sale => <div key={sale.currency} className="mt-2"><p className="text-xl font-extrabold text-slate-950">{new Intl.NumberFormat(undefined,{style:"currency",currency:sale.currency}).format(Number(sale.total))}</p><p className="text-xs text-slate-500">{sale.items_sold} item(s) sold · {sale.currency}</p></div>) : <p className="mt-2 text-sm font-semibold text-slate-700">No paid sales yet</p>}
+              </div>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-slate-500">Sales are calculated from your own paid order items and grouped by currency. Pending, failed and refunded orders are not counted as sales.</p>
+          </> : <p className="mt-5 text-sm text-slate-500">Loading business performance...</p>}
+        </section>}
 
         <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-3">
