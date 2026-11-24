@@ -122,3 +122,54 @@ The current Render URL remains the development/testing address until then.
 ## Change-control rule
 
 Before implementing a new feature, inspect the existing code, database schema, RLS policies and connected user journey. Reuse existing systems. Record the exact code commit, database migration confirmation, deployment status and user test result separately. Never label a workflow complete based on code presence alone.
+
+
+## Detailed audit findings — 2026-11-24
+
+### Marketplace / Vendor Centre — source inspection
+
+**Implemented foundations confirmed in source**
+- Marketplace payment initialization checks the signed-in customer owns the order, validates pending status, checks active stock reservations for physical items, and uses the configured public site URL for Paystack callback.
+- Payment verification/webhook fulfilment was previously inspected: Paystack is verified server-side, amount/currency are checked, fulfilment is idempotent, and the fulfilment database function is service-role-only.
+- Purchase-time `order_items.vendor_id` snapshot is populated during order creation. Migration 0046 backfills it and replaces the seller order query so seller order visibility and shipment updates use the order-item vendor snapshot, not the current product owner.
+- Physical shipment updates check approved vendor ownership, paid status, physical product type, and forward-only fulfilment transitions.
+- Online-service transitions check seller ownership, paid status, valid state transitions, and customer ownership for acceptance/revision. Private deliverables are stored in a private bucket and accessed through server routes.
+- Vendor payout destination details are accessed through server routes using service_role; table access is revoked from anon/authenticated. Payout requests snapshot the destination details at request time.
+- Vendor payout requests reserve balances while pending/approved/paid. External transfers are manual and an admin explicitly confirms the transfer before marking a request paid.
+
+**Correction / integrity risks requiring a planned fix**
+- The vendor earnings and payout-balance functions in migrations 0014/0015 still join `order_items` to the current `products.vendor_id`, instead of using the purchase-time `order_items.vendor_id` snapshot. This can omit earnings if a product is deleted and misattribute historic sales after a product changes owner. The seller order listing was corrected in migration 0046, but the earnings functions were not.
+- The Marketplace admin payout PATCH route reads the current status and then updates the row in a separate request. It does not include the prior status in the update condition or use an atomic locked database function. Concurrent admin decisions can race. Replace with an atomic conditional transition, retaining the external-transfer confirmation requirement.
+- No complete buyer-facing returns/refunds/disputes workflow was found in the inspected Marketplace routes and migrations. The existence of a refunded payment enum/status is not a refund workflow.
+- Multi-vendor physical fulfilment, payment failure/retry and webhook replay, and full delivery acceptance remain live-test requirements.
+
+### NBJ Academy — source inspection
+
+**Implemented foundations confirmed in source**
+- Paid course initialization creates a pending transaction, verifies the signed-in student, checks published course and course price/currency, and prevents already-active/completed duplicate enrolment.
+- Instructor earnings are created idempotently when a payment transaction changes to paid. Earnings remain pending review until an administrator reconciles the platform fee.
+- Instructor payout requests lock available earnings and reserve them. Admin payout functions lock payout requests, enforce allowed transitions, update reserved earnings, and write an audit record transactionally.
+- Admin Academy finance API checks the signed-in user's database profile role before using privileged service-role RPCs. The privileged finance functions are not executable by anon/authenticated roles.
+- Private lesson material and quiz-answer access protections were found in earlier migration inspection.
+
+**Correction / integrity risks requiring a planned fix**
+- Academy payment initialization builds its Paystack callback from `new URL(request.url).origin`. Align it with the canonical hosted-site callback setting used by Marketplace (`NEXT_PUBLIC_SITE_URL`) before accepting Academy payments in production.
+- Instructor payout account details are stored directly on payout request records and surfaced to the admin finance API. Access is restricted by server-side admin checks, but the retention, masking and operational handling of those sensitive destination details need a dedicated review.
+- Academy course purchase-to-completion, certificate issuance/verification, and instructor payout settlement remain live-test requirements. Admin payout functions record a paid status but do not themselves execute an external bank/mobile-money transfer.
+
+### Admin identity and payout controls
+
+- Admin middleware currently uses a hard-coded owner email allowlist, while sensitive admin API routes also check the user's database `profiles.role = 'admin'`. These are different gates. Verify the intended owner account and make the identity strategy consistent before broadening admin access; do not change the allowlist or roles without checking the actual database state.
+- Marketplace payout API status changes need atomic concurrency protection as described above.
+- Academy finance uses database-locked transitions and an audit log, which is a stronger pattern to reuse.
+
+### Migration inventory issue
+
+- The repository currently contains 57 migration files, with two different files using version prefix `0016`: `0016_product_reviews.sql` and `0016_vendor_order_management.sql`.
+- This is a migration-history/CLI risk. Do not rename, reorder, or reapply either file until the live Supabase migration history is checked. Existing manually applied SQL must not be replayed blindly.
+
+### Audit boundaries
+
+- These are repository/source findings, not confirmation that the live database has every migration or that every route has been exercised.
+- No application-code correction or database migration was applied as part of this audit update.
+- The next checks are the remaining RLS/grant and route authorization review across Work, Academy, Business and Admin, followed by a consolidated prioritized correction plan and live acceptance checklist.
