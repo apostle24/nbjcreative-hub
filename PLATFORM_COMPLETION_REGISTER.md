@@ -173,3 +173,34 @@ Before implementing a new feature, inspect the existing code, database schema, R
 - These are repository/source findings, not confirmation that the live database has every migration or that every route has been exercised.
 - No application-code correction or database migration was applied as part of this audit update.
 - The next checks are the remaining RLS/grant and route authorization review across Work, Academy, Business and Admin, followed by a consolidated prioritized correction plan and live acceptance checklist.
+
+
+### Work / Academy / Business — RLS and route authorization review
+
+**NBJ Work**
+- Core employer, job and application tables have RLS enabled. Published jobs and public employer/candidate profiles are readable publicly; private application records are restricted to the applicant, the employer who owns the job, or an administrator.
+- Application insert policy binds `applicant_id` to the signed-in user. Application updates/deletes are revoked from ordinary authenticated users; employer review is performed through a server route that checks the job's employer owner against the signed-in user.
+- CV access route checks that the signed-in user owns the employer profile associated with the application before issuing a short-lived signed URL. Candidate documents are otherwise owner/admin restricted.
+- Employer verification evidence uses owner/admin storage policies, and the admin verification API checks the database admin role.
+- Remaining checks: inspect the complete applicant insert policy and application submission route together; test candidate-to-employer access boundaries with separate accounts; verify that public profile fields contain only intended public information. The full job-to-hire journey is still untested.
+
+**NBJ Academy**
+- Core course, section, lesson, enrolment and progress tables have RLS policies scoped to instructors, enrolled students and the student who owns progress/enrolment records.
+- Quiz answer keys have instructor-only row policies despite authenticated table grants. Quiz attempts and responses are tied to the student and active enrolment; answer submission is limited to unsubmitted attempts.
+- Private lesson-material storage policies restrict reads to the instructor or enrolled students (including completed enrolments), and restrict uploads/updates/deletes to the course instructor.
+- Academy notifications are recipient-scoped; users can update their own read timestamp, while insert/delete are revoked from ordinary users.
+- Continue reviewing certificate and notification function grants and test student/instructor separation against the live database.
+
+**NBJ Business**
+- Workspace reads and updates use workspace membership/owner checks. Customer enquiries are not directly writable by anon/authenticated roles; public submission goes through a validating security-definer function that accepts enquiries only for active public businesses. Enquiry status updates require an authenticated workspace manager.
+- Public directory/profile/offerings are exposed through dedicated security-definer read functions rather than direct unrestricted access to private workspace records.
+- Business performance function checks authentication and workspace-management permission.
+- Public enquiry endpoint currently has no identified rate limit, CAPTCHA, or abuse throttling. Add an abuse-control design before public launch; do not block current working enquiry flow without a replacement.
+- Email sending remains intentionally deferred until domain and sender configuration.
+
+**Admin Centre**
+- Admin API routes inspected for Marketplace products/reviews, vendor approval/review, Work verification, vendor payouts and Academy finance check the signed-in user's database profile role before using the service-role client or privileged finance functions.
+- Middleware additionally applies the single-owner email allowlist to `/admin` and `/api/admin`. The database admin role and middleware allowlist must be kept aligned. The single-owner migration sets the owner account to admin and demotes other admin-role profiles; confirm the live account/role state before changing this policy.
+- Work verification PATCH currently saves the verification status and then separately updates the employer's public `is_verified` flag. If the second write fails, the route reports partial failure; consider moving both writes into one database transaction.
+- Admin route authorization is present in the inspected endpoints, but the remaining Admin pages/routes and their underlying table grants still require a complete review.
+
