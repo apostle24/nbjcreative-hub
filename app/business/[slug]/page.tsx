@@ -6,6 +6,19 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Building2, ExternalLink, MapPin } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+type BusinessOffering = {
+  id: string;
+  title: string;
+  slug: string;
+  product_type: "physical" | "digital" | "online_service";
+  summary: string | null;
+  description: string | null;
+  price: number | string;
+  currency: string;
+  shipping_note: string | null;
+  delivery_note: string | null;
+};
+
 type BusinessProfile = {
   business_name: string;
   business_slug: string;
@@ -19,6 +32,7 @@ type BusinessProfile = {
 export default function PublicBusinessProfilePage() {
   const params = useParams<{ slug: string }>();
   const [business, setBusiness] = useState<BusinessProfile | null>(null);
+  const [offerings, setOfferings] = useState<BusinessOffering[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [senderName, setSenderName] = useState("");
@@ -36,7 +50,11 @@ export default function PublicBusinessProfilePage() {
       const { data, error: rpcError } = await supabase.rpc("get_public_business_profile", { p_business_slug: params.slug });
       if (!active) return;
       if (rpcError) setError("We couldn't load this business profile. Please try again later.");
-      else if (data) setBusiness(data as BusinessProfile);
+      else if (data) {
+        setBusiness(data as BusinessProfile);
+        const { data: offeringData } = await supabase.rpc("get_public_business_offerings", { p_business_slug: params.slug });
+        if (active) setOfferings((offeringData ?? []) as BusinessOffering[]);
+      }
       setLoading(false);
     }
     load();
@@ -81,6 +99,22 @@ export default function PublicBusinessProfilePage() {
     <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5"><Link href="/" className="text-lg font-extrabold text-slate-900">NBJCreative <span className="text-teal-700">Hub</span></Link><Link href="/businesses" className="text-sm font-semibold text-teal-700 hover:underline">Business directory</Link></div></header>
     <section className="bg-slate-950 text-white"><div className="mx-auto max-w-5xl px-5 py-16 md:py-24"><p className="text-xs font-bold uppercase tracking-[.22em] text-teal-300">Business profile</p><div className="mt-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-teal-200"><Building2 size={28}/></div><h1 className="mt-6 max-w-3xl text-4xl font-extrabold tracking-tight md:text-6xl">{business.business_name}</h1>{business.industry && <p className="mt-4 text-sm font-semibold text-teal-200">{business.industry}</p>}<p className="mt-5 max-w-2xl whitespace-pre-wrap text-base leading-8 text-slate-300">{business.description || "Discover this business and its work."}</p><div className="mt-7 flex flex-wrap gap-4 text-sm text-slate-300">{location && <span className="inline-flex items-center gap-2"><MapPin size={16}/>{location}</span>}{business.website_url && <a href={business.website_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 font-bold text-teal-200 hover:underline">Visit business website <ExternalLink size={15}/></a>}</div></div></section>
     <section className="mx-auto max-w-5xl px-5 py-12">
+      {offerings.length > 0 && <section className="mb-10">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div><p className="text-xs font-bold uppercase tracking-wider text-teal-700">What we offer</p><h2 className="mt-2 text-2xl font-extrabold text-slate-900">Products & services</h2><p className="mt-2 text-sm text-slate-600">Explore this business's published offerings on NBJ Marketplace.</p></div>
+          <Link href="/marketplace" className="text-sm font-bold text-teal-700 hover:underline">Explore marketplace →</Link>
+        </div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {offerings.map(item => <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-teal-700">{item.product_type === "physical" ? "Physical product" : item.product_type === "online_service" ? "Online service" : "Digital product"}</p>
+            <h3 className="mt-2 text-lg font-bold text-slate-900">{item.title}</h3>
+            {item.summary && <p className="mt-2 text-sm leading-6 text-slate-600">{item.summary}</p>}
+            <p className="mt-4 text-base font-extrabold text-slate-900">{item.currency} {Number(item.price).toFixed(2)}</p>
+            {(item.shipping_note || item.delivery_note) && <p className="mt-2 text-xs leading-5 text-slate-500">{item.shipping_note || item.delivery_note}</p>}
+            <Link href={"/products/" + item.slug} className="mt-4 inline-flex rounded-full bg-slate-950 px-4 py-2 text-xs font-bold text-white hover:bg-teal-700">View offering →</Link>
+          </article>)}
+        </div>
+      </section>}
       <div className="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-7">
           <h2 className="text-xl font-extrabold text-slate-900">Connect with this business</h2>
