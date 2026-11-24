@@ -93,10 +93,22 @@ export default function BusinessWorkspacePage() {
     setError("");
     setNotice("");
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user) {
-      window.location.assign("/account?next=/business");
+      setError(userError?.message || "Your sign-in session could not be verified. Please sign in again.");
+      setBusy(false);
       return;
+    }
+    let tokenClaims: Record<string, unknown> | null = null;
+    try {
+      const tokenPart = session?.access_token.split(".")[1];
+      if (tokenPart) {
+        const normalized = tokenPart.replace(/-/g, "+").replace(/_/g, "/");
+        tokenClaims = JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")));
+      }
+    } catch {
+      tokenClaims = null;
     }
     const slug = slugify(businessName);
     if (slug.length < 2) {
@@ -134,9 +146,18 @@ export default function BusinessWorkspacePage() {
       const databaseDetail = [result.error.message, result.error.details, result.error.hint]
         .filter(Boolean)
         .join(" ");
+      const authDiagnostic = [
+        `Signed-in account: ${user.email || "not returned"}`,
+        `App user ID: ${user.id}`,
+        `Session token email: ${typeof tokenClaims?.email === "string" ? tokenClaims.email : "not available"}`,
+        `Session token user ID: ${typeof tokenClaims?.sub === "string" ? tokenClaims.sub : "not available"}`,
+        `Session token role: ${typeof tokenClaims?.role === "string" ? tokenClaims.role : "not available"}`,
+        `App ID matches token ID: ${Boolean(tokenClaims?.sub && tokenClaims.sub === user.id) ? "YES" : "NO"}`,
+        `Session check: ${sessionError?.message || "no error"}`
+      ].join(" | ");
       setError(result.error.code === "23505"
         ? "A business workspace already exists for this account, or that business address is already taken."
-        : `We couldn't save your business workspace. Database response: ${databaseDetail || "No additional details returned"} (code: ${result.error.code || "unknown"}).`);
+        : `We couldn't save your business workspace. Database response: ${databaseDetail || "No additional details returned"} (code: ${result.error.code || "unknown"}). Authentication check: ${authDiagnostic}`);
     } else {
       setWorkspace(result.data as Workspace);
       setNotice("Your business workspace has been saved.");
