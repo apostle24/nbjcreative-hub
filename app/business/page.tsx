@@ -136,6 +136,8 @@ export default function BusinessWorkspacePage() {
       default_currency: currency,
       is_public: isPublic
     };
+    const { data: databaseAuthContext, error: databaseAuthError } = await supabase.rpc("get_business_workspace_auth_context");
+
     const result = workspace
       ? await supabase.from("business_workspaces").update(payload).eq("id", workspace.id)
           .select("id,business_name,business_slug,description,industry,country,city,website_url,contact_email,contact_phone,default_currency,is_public").single()
@@ -153,7 +155,11 @@ export default function BusinessWorkspacePage() {
         `Session token user ID: ${typeof tokenClaims?.sub === "string" ? tokenClaims.sub : "not available"}`,
         `Session token role: ${typeof tokenClaims?.role === "string" ? tokenClaims.role : "not available"}`,
         `App ID matches token ID: ${Boolean(tokenClaims?.sub && tokenClaims.sub === user.id) ? "YES" : "NO"}`,
-        `Session check: ${sessionError?.message || "no error"}`
+        `Session check: ${sessionError?.message || "no error"}`,
+        `Database auth user ID: ${databaseAuthContext?.database_user_id || "not returned"}`,
+        `Database auth role: ${databaseAuthContext?.database_role || "not returned"}`,
+        `Database current user: ${databaseAuthContext?.database_current_user || "not returned"}`,
+        `Database auth RPC check: ${databaseAuthError?.message || "no error"}`
       ].join(" | ");
       setError(result.error.code === "23505"
         ? "A business workspace already exists for this account, or that business address is already taken."
