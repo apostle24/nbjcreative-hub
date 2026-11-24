@@ -211,3 +211,26 @@ Before implementing a new feature, inspect the existing code, database schema, R
 - Certificate issuance function checks that the requesting user owns an active enrolment, requires lesson completion and passing all published quizzes, and creates one certificate per enrolment.
 - The certificate issuance function is declared `SECURITY DEFINER` with `search_path = public`, unlike the stricter empty-search-path convention used by most newer functions. Review and harden its search path and explicit execute grants/revokes in a later migration after confirming the live migration state.
 - Certificate verification as a public, tamper-resistant lookup journey has not yet been confirmed; the current inspected migration establishes issuance and owner/instructor read access, not a complete public verification workflow.
+
+
+### Final route-level checks and additional defects to verify
+
+- NBJ Work employer application review converts `interviewAt` to ISO format before validating it. A malformed date can throw and return a generic 500 rather than a 400 validation response. Fix input validation order when the Work API correction pass begins.
+- Work verification submission checks employer ownership and confirms the uploaded evidence object exists before saving the request. The review endpoint uses a service-role client only after authenticated owner/admin checks.
+- Marketplace vendor review and approval endpoints both check the database admin role. The general review endpoint should also validate the vendor ID as a UUID and enforce allowed transition rules; it currently accepts any non-empty ID and writes one of the allowed statuses without checking the prior state.
+- Academy finance GET returns payout account details to verified admins. This is intentional for transfer processing but should be masked in general UI responses and revealed only when needed for an actual payout.
+- Business public enquiry endpoint has basic field validation and HTML escaping for email content. It does not currently enforce request throttling or a bot challenge. The SQL email-address regex in migration 0052 appears to contain a doubled backslash before the dot; verify the live RPC accepts a normal address before altering it. The user previously confirmed a successful enquiry, so treat this as a verification item rather than assuming a live defect.
+- Academy payment initialization uses the request origin for the callback; the shared payment callback page does support both Marketplace orders and Academy course references through the central verification endpoint. This reduces duplicated callback logic, but the origin should still be canonicalized before production.
+- No separate public certificate-verification route was found in the API/page inventory inspected. Certificate issuance and private student/instructor visibility exist; public verification remains unconfirmed.
+- There is no current test runner or automated test suite in `package.json`. Establish a minimal test strategy (unit/integration plus Playwright or equivalent end-to-end coverage) before adding more platform surface area.
+
+### Audit readiness and remaining external checks
+
+The repository-level audit is now broad enough to move into a controlled correction plan. The following cannot be confirmed from GitHub source alone:
+1. Which migrations are recorded as applied in the live Supabase project, especially the duplicate `0016` version.
+2. Whether live RLS policies and function grants exactly match the repository migrations.
+3. Whether current production data contains legacy order items with null or incorrect vendor snapshots.
+4. Whether Academy Paystack callback and all payout/fulfilment paths pass real live end-to-end tests.
+5. Whether the live owner account and `profiles.role` are aligned with the middleware owner allowlist.
+
+Do not apply any migration, rename a migration, or change admin roles until these live-state checks are completed.
