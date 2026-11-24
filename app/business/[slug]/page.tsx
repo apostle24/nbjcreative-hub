@@ -89,19 +89,25 @@ export default function PublicBusinessProfilePage() {
     setSending(true);
     setError("");
     setSuccess("");
-    const supabase = createClient();
-    const { error: submitError } = await supabase.rpc("submit_business_enquiry", {
-      p_business_slug: business.business_slug,
-      p_sender_name: senderName,
-      p_sender_email: senderEmail,
-      p_sender_phone: senderPhone || null,
-      p_subject: subject,
-      p_message: message
+    const response = await fetch("/api/business/enquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        businessSlug: business.business_slug,
+        senderName,
+        senderEmail,
+        senderPhone,
+        subject,
+        message
+      })
     });
-    if (submitError) {
-      setError(submitError.message || "Your enquiry could not be sent. Please try again.");
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok) {
+      setError(result.error || "Your enquiry could not be sent. Please try again.");
     } else {
-      setSuccess("Your enquiry has been sent to this business. They can review it through their NBJ Business workspace.");
+      setSuccess(result.notificationSent
+        ? "Your enquiry has been sent. The business owner has also received an email notification."
+        : "Your enquiry has been saved to the business inbox. Email notification is not configured yet.");
       setSenderName("");
       setSenderEmail("");
       setSenderPhone("");
