@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, ExternalLink, MapPin } from "lucide-react";
+import { ArrowLeft, Building2, ExternalLink, MapPin, Share2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type BusinessOffering = {
@@ -42,6 +42,7 @@ export default function PublicBusinessProfilePage() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState("");
+  const [shareNotice, setShareNotice] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -60,6 +61,27 @@ export default function PublicBusinessProfilePage() {
     load();
     return () => { active = false; };
   }, [params.slug]);
+
+  async function shareBusiness() {
+    const profileUrl = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: business?.business_name || "Business profile", text: "Discover this business on NBJCreative Hub.", url: profileUrl });
+        setShareNotice("Business profile shared.");
+      } else {
+        await navigator.clipboard.writeText(profileUrl);
+        setShareNotice("Business profile link copied. You can now share it with customers.");
+      }
+    } catch (shareError) {
+      if (shareError instanceof Error && shareError.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(profileUrl);
+        setShareNotice("Business profile link copied. You can now share it with customers.");
+      } catch {
+        setShareNotice("Copy this page's web address from your browser to share the profile.");
+      }
+    }
+  }
 
   async function submitEnquiry(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -97,9 +119,9 @@ export default function PublicBusinessProfilePage() {
 
   return <main className="min-h-screen bg-[#F5F7F8]">
     <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5"><Link href="/" className="text-lg font-extrabold text-slate-900">NBJCreative <span className="text-teal-700">Hub</span></Link><Link href="/businesses" className="text-sm font-semibold text-teal-700 hover:underline">Business directory</Link></div></header>
-    <section className="bg-slate-950 text-white"><div className="mx-auto max-w-5xl px-5 py-16 md:py-24"><p className="text-xs font-bold uppercase tracking-[.22em] text-teal-300">Business profile</p><div className="mt-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-teal-200"><Building2 size={28}/></div><h1 className="mt-6 max-w-3xl text-4xl font-extrabold tracking-tight md:text-6xl">{business.business_name}</h1>{business.industry && <p className="mt-4 text-sm font-semibold text-teal-200">{business.industry}</p>}<p className="mt-5 max-w-2xl whitespace-pre-wrap text-base leading-8 text-slate-300">{business.description || "Discover this business and its work."}</p><div className="mt-7 flex flex-wrap gap-4 text-sm text-slate-300">{location && <span className="inline-flex items-center gap-2"><MapPin size={16}/>{location}</span>}{business.website_url && <a href={business.website_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 font-bold text-teal-200 hover:underline">Visit business website <ExternalLink size={15}/></a>}</div></div></section>
+    <section className="bg-slate-950 text-white"><div className="mx-auto max-w-5xl px-5 py-16 md:py-24"><p className="text-xs font-bold uppercase tracking-[.22em] text-teal-300">Business profile</p><div className="mt-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-teal-200"><Building2 size={28}/></div><h1 className="mt-6 max-w-3xl text-4xl font-extrabold tracking-tight md:text-6xl">{business.business_name}</h1>{business.industry && <p className="mt-4 text-sm font-semibold text-teal-200">{business.industry}</p>}<p className="mt-5 max-w-2xl whitespace-pre-wrap text-base leading-8 text-slate-300">{business.description || "Discover this business and its work."}</p><div className="mt-7 flex flex-wrap items-center gap-4 text-sm text-slate-300">{location && <span className="inline-flex items-center gap-2"><MapPin size={16}/>{location}</span>}{business.website_url && <a href={business.website_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 font-bold text-teal-200 hover:underline">Visit business website <ExternalLink size={15}/></a>}<button type="button" onClick={shareBusiness} className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 font-bold text-white hover:bg-white/10"><Share2 size={15}/> Share business</button></div>{shareNotice && <p role="status" className="mt-3 text-xs font-semibold text-teal-200">{shareNotice}</p>}</div></section>
     <section className="mx-auto max-w-5xl px-5 py-12">
-      {offerings.length > 0 && <section className="mb-10">
+      {offerings.length > 0 && <section id="offerings" className="mb-10">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div><p className="text-xs font-bold uppercase tracking-wider text-teal-700">What we offer</p><h2 className="mt-2 text-2xl font-extrabold text-slate-900">Products & services</h2><p className="mt-2 text-sm text-slate-600">Explore this business's published offerings on NBJ Marketplace.</p></div>
           <Link href="/marketplace" className="text-sm font-bold text-teal-700 hover:underline">Explore marketplace →</Link>
@@ -121,7 +143,7 @@ export default function PublicBusinessProfilePage() {
           <p className="mt-2 text-sm leading-6 text-slate-600">Send a question, request information, or discuss a possible business partnership. Your message will be delivered to the business through NBJCreative Hub.</p>
           <p className="mt-5 text-xs leading-5 text-slate-500">Your contact details are shared with this business only so it can respond to your enquiry. They are not displayed publicly.</p>
         </div>
-        <form onSubmit={submitEnquiry} className="rounded-2xl border border-slate-200 bg-white p-7">
+        <form id="enquiry" onSubmit={submitEnquiry} className="rounded-2xl border border-slate-200 bg-white p-7">
           <h2 className="text-xl font-extrabold text-slate-900">Send an enquiry</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <label className="text-sm font-semibold text-slate-700">Your name
