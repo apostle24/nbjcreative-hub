@@ -13,6 +13,7 @@ type Enquiry = {
   message: string;
   status: "new" | "in_progress" | "responded" | "closed";
   created_at: string;
+  email_notification_status?: "pending" | "sent" | "skipped" | "failed";
 };
 
 const statusLabels: Record<Enquiry["status"], string> = {
@@ -54,7 +55,7 @@ export default function BusinessEnquiriesPage() {
     setBusinessName(workspace.business_name);
     const { data, error: enquiryError } = await supabase
       .from("business_enquiries")
-      .select("id,sender_name,sender_email,sender_phone,subject,message,status,created_at")
+      .select("id,sender_name,sender_email,sender_phone,subject,message,status,created_at,email_notification_status")
       .eq("workspace_id", workspace.id)
       .order("created_at", { ascending: false });
     if (enquiryError) setError("We couldn't load your enquiries. " + enquiryError.message);
@@ -111,6 +112,7 @@ export default function BusinessEnquiriesPage() {
             </label>
           </div>
           <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-slate-700">{item.message}</p>
+          <p className="mt-3 text-xs text-slate-500">Email alert: {item.email_notification_status === "sent" ? "Sent to business owner" : item.email_notification_status === "failed" ? "Delivery failed" : item.email_notification_status === "skipped" ? "Not configured" : "Pending"}</p>
           <a href={"mailto:" + item.sender_email + "?subject=" + encodeURIComponent("Re: " + item.subject)} className="mt-5 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-700">Reply by email</a>
         </article>)}</div>}
     </div>
