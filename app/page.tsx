@@ -17,6 +17,7 @@ const categoryPresentation = [
 ];
 
 type Category = { id: string; name: string; slug: string; description: string | null; sort_order: number };
+type SpotlightBusiness = { business_name: string; business_slug: string; description: string | null; industry: string | null; country: string | null; city: string | null; offerings_count: number };
 type CatalogueProduct = {
   id: string;
   title: string;
@@ -36,6 +37,7 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [products, setProducts] = useState<CatalogueProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [spotlightBusinesses, setSpotlightBusinesses] = useState<SpotlightBusiness[]>([]);
   const [loading, setLoading] = useState(true);
   const [catalogueError, setCatalogueError] = useState("");
 
@@ -44,15 +46,20 @@ export default function Home() {
     async function loadCatalogue() {
       try {
         const supabase = createClient();
-        const [categoryResult, productResult] = await Promise.all([
+        const [categoryResult, productResult, businessResult] = await Promise.all([
           supabase.from("categories").select("id,name,slug,description,sort_order").eq("is_active", true).order("sort_order"),
-          supabase.from("products").select("id,title,slug,summary,description,price,currency,featured,cover_image_path,product_type,category:categories(name)").eq("status", "published").order("created_at", { ascending: false })
+          supabase.from("products").select("id,title,slug,summary,description,price,currency,featured,cover_image_path,product_type,category:categories(name)").eq("status", "published").order("created_at", { ascending: false }),
+          supabase.rpc("get_public_business_directory")
         ]);
         if (categoryResult.error) throw categoryResult.error;
         if (productResult.error) throw productResult.error;
         if (mounted) {
           setCategories((categoryResult.data ?? []) as Category[]);
           setProducts((productResult.data ?? []) as unknown as CatalogueProduct[]);
+          if (!businessResult.error) {
+            const ranked = ((businessResult.data ?? []) as SpotlightBusiness[]).filter(b => Number(b.offerings_count) > 0);
+            setSpotlightBusinesses(ranked.slice(0, 3));
+          }
         }
       } catch {
         if (mounted) setCatalogueError("We couldn't load the shop right now. Please refresh the page.");
@@ -148,6 +155,23 @@ export default function Home() {
         <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-bold text-white hover:bg-teal"><LayoutDashboard size={16}/> Open central dashboard <ArrowRight size={15}/></Link>
       </div>
     </section>
+
+    {spotlightBusinesses.length > 0 && <section className="container py-14">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-7">
+        <div><p className="eyebrow mb-3">Discover the business community</p><h2 className="section-title">Businesses with something to offer.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Explore public businesses already showcasing published products and services on NBJ Marketplace.</p></div>
+        <Link href="/businesses" className="inline-flex items-center gap-2 text-sm font-bold text-teal hover:underline">Explore all businesses <ArrowRight size={15}/></Link>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {spotlightBusinesses.map(b => <article key={b.business_slug} className="rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-soft">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F2F0] text-teal"><Building2 size={22}/></div>
+          <p className="mt-4 text-[10px] font-extrabold uppercase tracking-widest text-teal">{b.industry || "Business"}</p>
+          <h3 className="mt-2 text-lg font-bold text-ink">{b.business_name}</h3>
+          <p className="mt-2 min-h-[44px] text-xs leading-5 text-slate-500">{b.description || "Discover this business on NBJCreative Hub."}</p>
+          <p className="mt-3 text-[11px] font-semibold text-slate-500">{[b.city,b.country].filter(Boolean).join(", ") || "Location not specified"} · {b.offerings_count} published {b.offerings_count === 1 ? "offering" : "offerings"}</p>
+          <Link href={"/business/"+b.business_slug} className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-teal hover:underline">Explore business <ArrowRight size={14}/></Link>
+        </article>)}
+      </div>
+    </section>}
 
     <section id="categories" className="container py-20">
       <div className="flex flex-wrap justify-between items-end gap-5 mb-9"><div><p className="eyebrow mb-3">Explore the collection</p><h2 className="section-title">Find the right tools for<br className="hidden sm:block"/> your next step.</h2></div><a href="#shop" className="text-sm font-bold text-teal">View all products <ArrowRight size={15} className="inline ml-1"/></a></div>
