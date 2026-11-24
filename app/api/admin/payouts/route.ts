@@ -57,7 +57,11 @@ export async function PATCH(request: Request) {
     const update: Record<string, unknown> = { status, admin_note: adminNote || null, reviewed_at: now };
     if (status === "paid") update.paid_at = now;
     const { data: saved, error: updateError } = await auth.admin!.from("vendor_payout_requests")
-      .update(update).eq("id", id).select("id,status,admin_note,reviewed_at,paid_at").maybeSingle();
+      .update(update)
+      .eq("id", id)
+      .eq("status", current.status)
+      .select("id,status,admin_note,reviewed_at,paid_at")
+      .maybeSingle();
     if (updateError) return NextResponse.json({ error: "Could not save payout decision: " + updateError.message }, { status: 500 });
     if (!saved || saved.status !== status) return NextResponse.json({ error: "The database did not confirm the payout decision." }, { status: 409 });
     return NextResponse.json({ ok: true, request: saved });
