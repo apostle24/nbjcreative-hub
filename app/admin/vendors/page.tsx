@@ -71,6 +71,7 @@ export default function AdminVendorsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vendorId: vendor.id,
+          expectedStatus: vendor.status,
           status,
           reviewNote: notes[vendor.id]?.trim() || ""
         })
@@ -116,6 +117,8 @@ export default function AdminVendorsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vendorId: vendor.id,
+          expectedStatus: vendor.status,
+          status: "approved",
           reviewNote: notes[vendor.id]?.trim() || ""
         })
       });
