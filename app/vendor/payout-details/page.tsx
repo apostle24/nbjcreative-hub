@@ -5,6 +5,49 @@ import Link from "next/link";
 
 type Method = { id:string; method_type:"bank"|"mobile_money"; country_code:string; currency:string; provider_name:string; account_name:string; destination_masked:string; branch_name:string|null; updated_at:string };
 
+const COUNTRY_CODES = [
+  "AD","AE","AF","AG","AI","AL","AM","AO","AQ","AR","AS","AT","AU","AW","AX","AZ",
+  "BA","BB","BD","BE","BF","BG","BH","BI","BJ","BL","BM","BN","BO","BQ","BR","BS","BT","BV","BW","BY","BZ",
+  "CA","CC","CD","CF","CG","CH","CI","CK","CL","CM","CN","CO","CR","CU","CV","CW","CX","CY","CZ",
+  "DE","DJ","DK","DM","DO","DZ",
+  "EC","EE","EG","EH","ER","ES","ET",
+  "FI","FJ","FK","FM","FO","FR",
+  "GA","GB","GD","GE","GF","GG","GH","GI","GL","GM","GN","GP","GQ","GR","GS","GT","GU","GW","GY",
+  "HK","HM","HN","HR","HT","HU",
+  "ID","IE","IL","IM","IN","IO","IQ","IR","IS","IT",
+  "JE","JM","JO","JP",
+  "KE","KG","KH","KI","KM","KN","KP","KR","KW","KY","KZ",
+  "LA","LB","LC","LI","LK","LR","LS","LT","LU","LV","LY",
+  "MA","MC","MD","ME","MF","MG","MH","MK","ML","MM","MN","MO","MP","MQ","MR","MS","MT","MU","MV","MW","MX","MY","MZ",
+  "NA","NC","NE","NF","NG","NI","NL","NO","NP","NR","NU","NZ",
+  "OM",
+  "PA","PE","PF","PG","PH","PK","PL","PM","PN","PR","PS","PT","PW","PY",
+  "QA",
+  "RE","RO","RS","RU","RW",
+  "SA","SB","SC","SD","SE","SG","SH","SI","SJ","SK","SL","SM","SN","SO","SR","SS","ST","SV","SX","SY","SZ",
+  "TC","TD","TF","TG","TH","TJ","TK","TL","TM","TN","TO","TR","TT","TV","TW","TZ",
+  "UA","UG","UM","US","UY","UZ",
+  "VA","VC","VE","VG","VI","VN","VU",
+  "WF","WS",
+  "YE","YT",
+  "ZA","ZM","ZW"
+] as const;
+
+const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+const COUNTRIES = COUNTRY_CODES
+  .map(code => ({ code, name: regionNames.of(code) || code }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+const currencyValues = (Intl as unknown as { supportedValuesOf?: (key: "currency") => string[] }).supportedValuesOf;
+const CURRENCIES = (currencyValues ? currencyValues("currency") : [
+  "AED","AFN","ALL","AMD","ANG","AOA","ARS","AUD","AWG","AZN","BAM","BBD","BDT","BGN","BHD","BIF","BMD","BND","BOB","BRL","BSD","BTN","BWP","BYN","BZD",
+  "CAD","CDF","CHF","CLP","CNY","COP","CRC","CUP","CVE","CZK","DJF","DKK","DOP","DZD","EGP","ERN","ETB","EUR","FJD","FKP","GBP","GEL","GHS","GIP","GMD","GNF","GTQ","GYD",
+  "HKD","HNL","HTG","HUF","IDR","ILS","INR","IQD","IRR","ISK","JMD","JOD","JPY","KES","KGS","KHR","KMF","KPW","KRW","KWD","KYD","KZT","LAK","LBP","LKR","LRD","LSL","LYD",
+  "MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRU","MUR","MVR","MWK","MXN","MYR","MZN","NAD","NGN","NIO","NOK","NPR","NZD","OMR","PAB","PEN","PGK","PHP","PKR","PLN","PYG",
+  "QAR","RON","RSD","RUB","RWF","SAR","SBD","SCR","SDG","SEK","SGD","SHP","SLE","SOS","SRD","SSP","STN","SYP","SZL","THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS",
+  "UAH","UGX","USD","UYU","UZS","VES","VND","VUV","WST","XAF","XCD","XOF","XPF","YER","ZAR","ZMW","ZWL"
+]).filter(code => /^[A-Z]{3}$/.test(code)).sort();
+
 export default function VendorPayoutDetailsPage(){
   const [method,setMethod]=useState<Method|null>(null);
   const [methodType,setMethodType]=useState<"bank"|"mobile_money">("mobile_money");
@@ -46,15 +89,15 @@ export default function VendorPayoutDetailsPage(){
       {error&&<p role="alert" className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}{notice&&<p role="status" className="mt-4 rounded-xl bg-teal-50 p-3 text-sm text-teal-800">{notice}</p>}
       <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-2">
         <label className="text-sm font-semibold text-slate-700">Payout method<select value={methodType} onChange={e=>setMethodType(e.target.value as "bank"|"mobile_money")} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"><option value="mobile_money">Mobile money</option><option value="bank">Bank account</option></select></label>
-        <label className="text-sm font-semibold text-slate-700">Country code<input required maxLength={2} value={country} onChange={e=>setCountry(e.target.value.toUpperCase())} placeholder="GH" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"/></label>
-        <label className="text-sm font-semibold text-slate-700">Currency<select value={currency} onChange={e=>setCurrency(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3">{["GHS","USD","GBP","EUR"].map(c=><option key={c}>{c}</option>)}</select></label>
-        <label className="text-sm font-semibold text-slate-700">{methodType==="bank"?"Bank name":"Mobile-money network"}<input required maxLength={100} value={provider} onChange={e=>setProvider(e.target.value)} placeholder={methodType==="bank"?"Bank name":"e.g. MTN MoMo"} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"/></label>
+        <label className="text-sm font-semibold text-slate-700">Country where your payout account is held<select required value={country} onChange={e=>setCountry(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"><option value="">Select country</option>{COUNTRIES.map(item=><option key={item.code} value={item.code}>{item.name} ({item.code})</option>)}</select></label>
+        <label className="text-sm font-semibold text-slate-700">Payout currency<select required value={currency} onChange={e=>setCurrency(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3">{CURRENCIES.map(code=><option key={code} value={code}>{code}</option>)}</select><span className="mt-1 block text-xs font-normal text-slate-500">Choose the currency your bank or wallet can receive. Availability depends on your payout provider.</span></label>
+        <label className="text-sm font-semibold text-slate-700">{methodType==="bank"?"Bank name":"Mobile-money network or wallet provider"}<input required maxLength={100} value={provider} onChange={e=>setProvider(e.target.value)} placeholder={methodType==="bank"?"Bank name":"e.g. MTN MoMo"} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"/></label>
         <label className="text-sm font-semibold text-slate-700">Account holder name<input required maxLength={120} value={accountName} onChange={e=>setAccountName(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" placeholder="Name on account"/></label>
-        <label className="text-sm font-semibold text-slate-700">{methodType==="bank"?"Account number":"Mobile-money number"}<input required={!method} maxLength={80} value={destination} onChange={e=>setDestination(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" placeholder={method?"Leave blank to keep saved number":"Enter account or wallet number"}/>{method&&<span className="mt-1 block text-xs font-normal text-slate-500">Leave blank to keep the existing number.</span>}</label>
+        <label className="text-sm font-semibold text-slate-700">{methodType==="bank"?"Account number or IBAN":"Mobile-money number or wallet reference"}<input required={!method} maxLength={80} value={destination} onChange={e=>setDestination(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" placeholder={method?"Leave blank to keep saved number":"Enter account or wallet number"}/>{method&&<span className="mt-1 block text-xs font-normal text-slate-500">Leave blank to keep the existing number.</span>}</label>
         {methodType==="bank"&&<label className="text-sm font-semibold text-slate-700 md:col-span-2">Branch (optional)<input maxLength={120} value={branch} onChange={e=>setBranch(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"/></label>}
         <button disabled={saving} className="rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-50 md:col-span-2">{saving?"Saving...":"Save payout details"}</button>
       </form>
     </section>
-    <p className="mt-4 text-xs leading-5 text-slate-400">Only the platform's authorised payout administrators can access the full destination details for processing. Saving details does not trigger a payment.</p>
+    <p className="mt-4 text-xs leading-5 text-slate-400">Only the platform's authorised payout administrators can access the full destination details for processing. Saving details does not trigger a payment. Country and currency choices do not guarantee that an external payout provider supports that destination.</p>
   </div></main>;
 }
