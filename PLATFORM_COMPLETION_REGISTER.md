@@ -1,6 +1,6 @@
 # NBJCreative Hub — Platform Completion Register
 
-Last reviewed: 2026-11-24
+Last reviewed: 2026-11-25
 Repository: apostle24/nbjcreative-hub
 
 This register separates code presence from verified user journeys. A route, migration or database function is not automatically considered production-ready.
@@ -234,3 +234,34 @@ The repository-level audit is now broad enough to move into a controlled correct
 5. Whether the live owner account and `profiles.role` are aligned with the middleware owner allowlist.
 
 Do not apply any migration, rename a migration, or change admin roles until these live-state checks are completed.
+
+
+## Consolidated source audit update — 2026-11-25
+
+The current `main` tree contains 171 files, 23 API route handlers and 66 SQL migration files. Vitest is configured, but the existing test suite still has only a setup smoke test; feature-level coverage is minimal.
+
+### Earlier findings rechecked against current source
+
+The following items listed as open in the earlier notes are already addressed in the current source and should not be treated as active defects:
+- Vendor earnings and payout-balance functions use the purchase-time `order_items.vendor_id` snapshot (migration 0061), rather than the current product owner.
+- Marketplace admin payout updates use a conditional status predicate to reject stale updates.
+- Academy payment initialization uses `NEXT_PUBLIC_SITE_URL` with a hosted-forwarded-host fallback for the Paystack callback.
+- Work interview date validation occurs before conversion to ISO.
+- Public Business enquiries call `consume_business_enquiry_rate_limit` before accepting an enquiry.
+
+### Current confirmed correction
+
+- The Admin Vendor page's Approve button called the review API without `status: "approved"`, although the API required a status. This caused the approval action to be rejected as invalid input.
+- The same review endpoint did not compare the vendor's previously displayed status during the update. A stale admin page could overwrite a newer decision.
+- The correction sends the displayed status as `expectedStatus`, sends `status: "approved"` from the Approve action, and applies the update only when the database row still has the expected status. Stale decisions return HTTP 409 and require a refresh.
+- Added focused unit coverage for accepted and rejected vendor status values.
+
+### Outstanding items requiring live or broader testing
+
+- The two migration files with prefix `0016` remain a Supabase migration-history/CLI risk. Do not rename or replay them until the live migration ledger is inspected.
+- The current Admin identity still has two gates: the middleware owner-email allowlist and the database `profiles.role = 'admin'`. Verify the live owner account alignment before changing either.
+- Returns/refunds/disputes, full multi-vendor fulfilment, global payment method coverage, complete Work-to-hire, Academy purchase-to-certificate, and instructor/vendor external payout settlement remain end-to-end acceptance items.
+- Public certificate verification has not been confirmed in the route inventory.
+- Review upload MIME/type enforcement, private bucket configuration, backup/recovery, monitoring and complete role-based RLS grants before public launch.
+
+This update is based on the current GitHub source tree. It does not prove live Supabase migration parity, live production data integrity, Render deployment health or completion of user journeys.
