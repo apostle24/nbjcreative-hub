@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -22,13 +23,35 @@ export async function POST(request: Request) {
     const senderPhone = clean(body?.senderPhone, 40);
     const subject = clean(body?.subject, 160);
     const message = clean(body?.message, 5000);
+    const companyWebsite = clean(body?.companyWebsite, 200);
+
+    if (companyWebsite) {
+      return NextResponse.json({ ok: false, error: "Your enquiry could not be submitted." }, { status: 400 });
+    }
 
     if (!businessSlug || senderName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(senderEmail) ||
         subject.length < 2 || message.length < 10) {
       return NextResponse.json({ ok: false, error: "Please complete all required enquiry fields with valid details." }, { status: 400 });
     }
 
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const clientIp = request.headers.get("x-real-ip") || forwardedFor?.split(",")[0]?.trim();
+    if (!clientIp) {
+      return NextResponse.json({ ok: false, error: "We could not verify this request. Please try again." }, { status: 503 });
+    }
+
+    const clientKeyHash = createHash("sha256").update(clientIp).digest("hex");
     const admin = createAdminClient();
+    const { data: rateLimitAllowed, error: rateLimitError } = await admin.rpc("consume_business_enquiry_rate_limit", {
+      p_client_key_hash: clientKeyHash
+    });
+    if (rateLimitError || rateLimitAllowed !== true) {
+      return NextResponse.json(
+        { ok: false, error: rateLimitError ? "Enquiry protection is temporarily unavailable. Please try again shortly." : "Too many enquiries have been sent. Please wait 15 minutes before trying again." },
+        { status: rateLimitError ? 503 : 429 }
+      );
+    }
+
     const { data: enquiryId, error: submitError } = await admin.rpc("submit_business_enquiry", {
       p_business_slug: businessSlug,
       p_sender_name: senderName,
