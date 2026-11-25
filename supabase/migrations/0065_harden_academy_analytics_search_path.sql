@@ -62,7 +62,7 @@ begin
   select
     e.id,
     e.student_id,
-    coalesce(nullif(pg_catalog.trim(p.full_name), ''), 'Student')::text,
+    coalesce(nullif(trim(p.full_name), ''), 'Student')::text,
     coalesce(p.email, '')::text,
     e.status,
     e.enrolled_at,
