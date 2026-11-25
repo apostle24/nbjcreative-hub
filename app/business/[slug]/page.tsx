@@ -89,6 +89,8 @@ export default function PublicBusinessProfilePage() {
     setSending(true);
     setError("");
     setSuccess("");
+    const formData = new FormData(event.currentTarget);
+    const companyWebsite = String(formData.get("companyWebsite") || "");
     const response = await fetch("/api/business/enquiries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -98,7 +100,8 @@ export default function PublicBusinessProfilePage() {
         senderEmail,
         senderPhone,
         subject,
-        message
+        message,
+        companyWebsite
       })
     });
     const result = await response.json().catch(() => ({}));
@@ -151,6 +154,9 @@ export default function PublicBusinessProfilePage() {
         </div>
         <form id="enquiry" onSubmit={submitEnquiry} className="rounded-2xl border border-slate-200 bg-white p-7">
           <h2 className="text-xl font-extrabold text-slate-900">Send an enquiry</h2>
+          <div aria-hidden="true" className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden">
+            <label>Leave this field empty<input type="text" name="companyWebsite" tabIndex={-1} autoComplete="off"/></label>
+          </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <label className="text-sm font-semibold text-slate-700">Your name
               <input required minLength={2} maxLength={120} value={senderName} onChange={e=>setSenderName(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-600"/>
