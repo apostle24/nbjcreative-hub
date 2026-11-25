@@ -4,6 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
+// Only reveal full payout instructions after an administrator approves the request.
+function maskPayoutDetails(value: string | null) {
+  const details = (value ?? "").trim();
+  if (!details) return "••••";
+  return "••••••••" + details.slice(-4);
+}
+
 async function getAdmin() {
   const session = await createClient();
   const { data: auth, error: authError } = await session.auth.getUser();
@@ -34,7 +41,7 @@ export async function GET() {
   const courseMap = new Map((courses.data ?? []).map(x => [x.id, x.title]));
   return NextResponse.json({
     earnings: (earnings.data ?? []).map(x => ({ ...x, instructor: profileMap.get(x.instructor_id) ?? null, course_title: courseMap.get(x.course_id) ?? "Course" })),
-    payouts: (payouts.data ?? []).map(x => ({ ...x, instructor: profileMap.get(x.instructor_id) ?? null })),
+    payouts: (payouts.data ?? []).map(x => ({ ...x, account_details: x.status === "approved" ? x.account_details : maskPayoutDetails(x.account_details), instructor: profileMap.get(x.instructor_id) ?? null })),
     audit: audit.data ?? []
   });
 }
