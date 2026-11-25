@@ -19,8 +19,12 @@ export async function POST(request: Request) {
     const status = typeof body?.status === "string" ? body.status : "";
     const note = typeof body?.employerNote === "string" ? body.employerNote.trim().slice(0, 2000) : "";
     const score = body?.qualityScore === null || body?.qualityScore === "" ? null : Number(body?.qualityScore);
-    const interviewAt = typeof body?.interviewAt === "string" && body.interviewAt.trim()
-      ? new Date(body.interviewAt).toISOString() : null;
+    const hasInterviewAt = body?.interviewAt !== null && body?.interviewAt !== undefined && body?.interviewAt !== "";
+    const rawInterviewAt = typeof body?.interviewAt === "string" ? body.interviewAt.trim() : "";
+    if (hasInterviewAt && (!rawInterviewAt || !Number.isFinite(Date.parse(rawInterviewAt)))) {
+      return NextResponse.json({ ok: false, error: "Enter a valid interview date and time." }, { status: 400 });
+    }
+    const interviewAt = rawInterviewAt ? new Date(rawInterviewAt).toISOString() : null;
 
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicationId)) {
       return NextResponse.json({ ok: false, error: "Invalid application reference." }, { status: 400 });
@@ -31,10 +35,6 @@ export async function POST(request: Request) {
     if (score !== null && (!Number.isInteger(score) || score < 1 || score > 5)) {
       return NextResponse.json({ ok: false, error: "Quality score must be between 1 and 5." }, { status: 400 });
     }
-    if (body?.interviewAt && (!interviewAt || Number.isNaN(Date.parse(body.interviewAt)))) {
-      return NextResponse.json({ ok: false, error: "Enter a valid interview date and time." }, { status: 400 });
-    }
-
     const admin = createAdminClient();
     const { data: application, error: lookupError } = await admin
       .from("work_job_applications")
