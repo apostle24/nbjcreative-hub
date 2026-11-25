@@ -43,3 +43,17 @@ Open http://localhost:3000.
 ## Environment and security
 
 Copy `.env.example` to `.env.local` when setting up a local environment. Never commit real credentials, service-role keys or payment secrets. Production secrets belong in the hosting provider's protected environment-variable settings.
+
+## Automated checks
+
+Install dependencies, then run:
+
+```bash
+npm install
+npm run test
+npm run typecheck
+npm run build
+```
+
+Vitest currently runs unit tests in the `tests/` directory. Add focused tests for business logic and security-sensitive helpers there. The initial smoke test verifies that the test runner is configured; it is not a substitute for feature-level coverage.
+
