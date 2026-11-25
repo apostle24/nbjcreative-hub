@@ -13,10 +13,14 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
+    const storeName = typeof body?.storeName === "string" ? body.storeName.trim() : "";
     const description = typeof body?.description === "string" ? body.description.trim() : "";
     const contactEmail = typeof body?.contactEmail === "string" ? body.contactEmail.trim() : "";
     const websiteUrl = typeof body?.websiteUrl === "string" ? body.websiteUrl.trim() : "";
 
+    if (storeName.length < 2 || storeName.length > 80) {
+      return NextResponse.json({ ok: false, error: "Store name must be between 2 and 80 characters." }, { status: 400 });
+    }
     if (description.length > 1000) {
       return NextResponse.json({ ok: false, error: "Store description must be 1,000 characters or fewer." }, { status: 400 });
     }
@@ -39,6 +43,7 @@ export async function PATCH(request: Request) {
     const { data: saved, error: updateError } = await adminClient
       .from("vendor_profiles")
       .update({
+        store_name: storeName,
         description: description || null,
         contact_email: contactEmail,
         website_url: websiteUrl || null
