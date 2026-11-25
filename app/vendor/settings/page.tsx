@@ -17,6 +17,7 @@ export default function VendorSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [vendor, setVendor] = useState<Vendor | null>(null);
+  const [storeName, setStoreName] = useState("");
   const [description, setDescription] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -38,6 +39,7 @@ export default function VendorSettingsPage() {
       else {
         const record = data as Vendor;
         setVendor(record);
+        setStoreName(record.store_name);
         setDescription(record.description ?? "");
         setContactEmail(record.contact_email);
         setWebsiteUrl(record.website_url ?? "");
@@ -55,13 +57,15 @@ export default function VendorSettingsPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",
-      body: JSON.stringify({ description, contactEmail, websiteUrl })
+      body: JSON.stringify({ storeName, description, contactEmail, websiteUrl })
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.ok) {
       setError(result.error || "Your store settings could not be saved. Please try again.");
     } else {
-      setVendor(result.vendor as Vendor);
+      const savedVendor = result.vendor as Vendor;
+      setVendor(savedVendor);
+      setStoreName(savedVendor.store_name);
       setNotice("Your store settings have been saved.");
     }
     setSaving(false);
@@ -78,7 +82,7 @@ export default function VendorSettingsPage() {
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-9">
         <p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">Seller workspace</p>
         <h1 className="mt-2 text-3xl font-extrabold text-slate-900">Store settings</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">Keep your public store information up to date. Your store name and web address stay unchanged to protect existing links.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Update your public store name and information. Your store web address stays unchanged to protect existing links.</p>
         {vendor ? <>
           <div className="mt-6 rounded-2xl bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Store identity</p>
@@ -86,6 +90,10 @@ export default function VendorSettingsPage() {
             <Link href={"/stores/" + vendor.store_slug} className="mt-1 inline-block text-sm text-teal-700 hover:underline">View public store →</Link>
           </div>
           <form onSubmit={save} className="mt-7 grid gap-5">
+            <label className="block text-sm font-semibold text-slate-700">Store name
+              <input required type="text" minLength={2} maxLength={80} value={storeName} onChange={e=>setStoreName(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal outline-none focus:border-teal-600" placeholder="Enter your public store name"/>
+              <span className="mt-1 block text-xs font-normal text-slate-400">2–80 characters. Your public store URL will not change.</span>
+            </label>
             <label className="block text-sm font-semibold text-slate-700">Store description
               <textarea rows={5} maxLength={1000} value={description} onChange={e=>setDescription(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal outline-none focus:border-teal-600" placeholder="Tell customers what your store offers."/>
               <span className="mt-1 block text-xs font-normal text-slate-400">{description.length}/1000 characters</span>
