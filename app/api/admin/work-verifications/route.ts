@@ -68,25 +68,23 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "A valid request and review decision are required." }, { status: 400 });
     }
 
-    const { data: current, error: currentError } = await access.admin
-      .from("work_employer_verifications").select("id,employer_id").eq("id", id).maybeSingle();
-    if (currentError) return NextResponse.json({ error: "Could not find this verification request." }, { status: 500 });
-    if (!current) return NextResponse.json({ error: "Verification request not found." }, { status: 404 });
-
-    const now = new Date().toISOString();
-    const { data: saved, error: saveError } = await access.admin
-      .from("work_employer_verifications")
-      .update({ status, review_note: reviewNote || null, reviewed_by: access.user.id, reviewed_at: now })
-      .eq("id", id)
-      .select("id,status,review_note,reviewed_at,employer_id")
-      .single();
-    if (saveError || !saved) return NextResponse.json({ error: "Could not save the review decision: " + (saveError?.message ?? "No record returned.") }, { status: 500 });
-
-    const { error: employerError } = await access.admin.from("work_employer_profiles")
-      .update({ is_verified: status === "verified" })
-      .eq("id", current.employer_id);
-    if (employerError) {
-      return NextResponse.json({ error: "The review was saved, but the public verification badge could not be updated. Please retry the same decision." }, { status: 500 });
+    const { data: savedRows, error: reviewError } = await access.admin.rpc(
+      "admin_review_work_employer_verification",
+      {
+        p_request_id: id,
+        p_status: status,
+        p_review_note: reviewNote || null,
+        p_reviewed_by: access.user.id
+      }
+    );
+    const saved = Array.isArray(savedRows) ? savedRows[0] : savedRows;
+    if (reviewError || !saved) {
+      const message = reviewError?.message ?? "No record returned.";
+      const notFound = /not found/i.test(message);
+      return NextResponse.json(
+        { error: notFound ? "Verification request not found." : "Could not save the review decision: " + message },
+        { status: notFound ? 404 : 500 }
+      );
     }
     return NextResponse.json({ ok: true, verification: saved });
   } catch {
