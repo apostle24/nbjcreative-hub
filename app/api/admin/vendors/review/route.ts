@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isVendorReviewStatus } from "@/lib/vendor-review";
 
-const allowedStatuses = ["pending", "approved", "rejected", "suspended"] as const;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function PATCH(request: Request) {
@@ -28,13 +28,16 @@ export async function PATCH(request: Request) {
 
     const body = await request.json();
     const vendorId = typeof body?.vendorId === "string" ? body.vendorId.trim() : "";
-    const status = typeof body?.status === "string" ? body.status : "";
-    const reviewNote = typeof body.reviewNote === "string" ? body.reviewNote.trim() : "";
+    const expectedStatus = body?.expectedStatus;
+    const status = body?.status;
+    const reviewNote = typeof body?.reviewNote === "string" ? body.reviewNote.trim().slice(0, 2000) : "";
 
-    if (!UUID.test(vendorId) || !allowedStatuses.includes(status as typeof allowedStatuses[number])) {
-      return NextResponse.json({ error: "A valid vendor ID and status are required." }, { status: 400 });
+    if (!UUID.test(vendorId) || !isVendorReviewStatus(expectedStatus) || !isVendorReviewStatus(status)) {
+      return NextResponse.json({ error: "A valid vendor ID, current status and decision are required." }, { status: 400 });
     }
 
+    // Compare-and-set: reject stale admin screens instead of overwriting a
+    // decision another administrator has already made.
     const { data: updated, error: updateError } = await admin
       .from("vendor_profiles")
       .update({
@@ -43,10 +46,17 @@ export async function PATCH(request: Request) {
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", vendorId)
+      .eq("status", expectedStatus)
       .select("id,status,review_note,reviewed_at")
-      .single();
+      .maybeSingle();
 
     if (updateError) throw updateError;
+    if (!updated) {
+      return NextResponse.json(
+        { error: "This vendor application has changed since you opened it. Refresh the list and review the latest status." },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({ vendor: updated });
   } catch (error) {
