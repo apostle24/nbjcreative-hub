@@ -28,9 +28,6 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
-  const secret = process.env.PAYSTACK_SECRET_KEY;
-  if (!secret) return NextResponse.json({ error: "Paystack is not configured on the server." }, { status: 503 });
-
   try {
     const body = await request.json();
     const id = typeof body?.id === "string" ? body.id.trim() : "";
@@ -56,6 +53,9 @@ export async function PATCH(request: Request) {
       if (!saved) return NextResponse.json({ error: "The refund request changed. Refresh and try again." }, { status: 409 });
       return NextResponse.json({ ok: true, refund: saved });
     }
+
+    const secret = process.env.PAYSTACK_SECRET_KEY;
+    if (!secret) return NextResponse.json({ error: "Paystack is not configured on the server." }, { status: 503 });
 
     // Claim the request before contacting Paystack. If the network times out,
     // the stable refund reference can be looked up instead of issuing a second refund.
@@ -93,7 +93,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: result?.message || "Paystack could not queue this refund." }, { status: 502 });
     }
 
-    const paystackStatus = String(result.data.status || "pending").toLowerCase();
+    const paystackStatus = String(result.data.status || "pending").toLowerCase().replace(/-/g, "_");
     const { error: saveError } = await auth.admin!.rpc("finalize_marketplace_refund", {
       p_refund_request_id: id,
       p_paystack_status: ["pending", "processing", "needs_attention", "failed", "processed"].includes(paystackStatus) ? paystackStatus : "pending",
