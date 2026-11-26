@@ -172,7 +172,7 @@ export default function OrderHistoryPage() {
                   })}
                 </div>
               </div>}
-              {isPaid && <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              {(isPaid || refunds.some(refund => refund.order_id === order.id)) && <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 {refunds.find(refund => refund.order_id === order.id) ? (() => {
                   const refund = refunds.find(item => item.order_id === order.id)!;
                   return <div><p className="text-sm font-bold text-ink">Refund request: <span className="capitalize">{refund.status.replaceAll("_", " ")}</span></p><p className="mt-1 text-xs text-slate-500">Reference {refund.refund_reference} · {refund.reason}</p>{refund.admin_note && <p className="mt-2 text-xs text-slate-600">Administrator note: {refund.admin_note}</p>}</div>;
