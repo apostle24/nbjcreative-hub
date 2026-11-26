@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getProductDownloadContentType, validateProductDownloadFiles } from "@/lib/product-downloads";
 
 type Category = { id: string; name: string };
 type Product = {
@@ -98,9 +99,8 @@ export default function AdminDashboardPage() {
     if (coverFile && (!["image/jpeg","image/png","image/webp"].includes(coverFile.type) || coverFile.size > 5 * 1024 * 1024)) {
       setError("Cover image must be JPG, PNG or WebP and no larger than 5 MB."); setBusy(false); return;
     }
-    if (files.length > 10 || files.some(item => item.size > 50 * 1024 * 1024)) {
-      setError("Upload up to 10 downloadable files. Each file must be 50 MB or smaller."); setBusy(false); return;
-    }
+    const fileValidationError = validateProductDownloadFiles(files);
+    if (fileValidationError) { setError(fileValidationError); setBusy(false); return; }
     if (!payload.slug || !Number.isFinite(payload.price) || payload.price < 0) {
       setError("Enter a valid product name, URL slug and non-negative price."); setBusy(false); return;
     }
@@ -123,9 +123,11 @@ export default function AdminDashboardPage() {
       if (coverUpdateError) { setError("Cover uploaded, but the product record could not be updated: " + coverUpdateError.message); setBusy(false); return; }
     }
     for (const item of files) {
+      const contentType = getProductDownloadContentType(item);
+      if (!contentType) { setError(item.name + " has an unsupported file type or MIME type."); setBusy(false); return; }
       const safeName = item.name.replace(/[^a-zA-Z0-9._-]/g,"-");
       const path = productId + "/" + crypto.randomUUID() + "-" + safeName;
-      const { error: uploadError } = await supabase.storage.from("product-downloads").upload(path,item,{upsert:false,contentType:item.type || "application/octet-stream"});
+      const { error: uploadError } = await supabase.storage.from("product-downloads").upload(path,item,{upsert:false,contentType});
       if (uploadError) { setError("Product saved, but a download upload failed: " + uploadError.message); setBusy(false); await loadData(); return; }
       const { error: fileRowError } = await supabase.from("product_files").insert({product_id:productId,storage_path:path,file_name:item.name,content_type:item.type || null,size_bytes:item.size});
       if (fileRowError) { setError("A file was uploaded, but its product record could not be saved. Please contact support before retrying."); setBusy(false); await loadData(); return; }
