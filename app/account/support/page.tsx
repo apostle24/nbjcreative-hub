@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import SupportConversation from "@/components/support/SupportConversation";
 
 type Ticket = {
   id: string;
@@ -94,6 +95,7 @@ export default function MySupportTicketsPage() {
             <span className={"rounded-full px-3 py-1 text-xs font-bold capitalize " + (ticket.status === "closed" ? "bg-slate-100 text-slate-600" : ticket.status === "in_progress" ? "bg-amber-50 text-amber-800" : "bg-teal-50 text-teal-800")}>{ticket.status.replace("_", " ")}</span>
           </div>
           <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{ticket.message}</p>
+          <SupportConversation ticketId={ticket.id} isAdmin={false} ticketStatus={ticket.status} />
           <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-400">Last updated {new Date(ticket.updated_at).toLocaleString()}</p>
         </article>)}
       </section>
