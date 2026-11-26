@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { getProductDownloadContentType, validateProductDownloadFiles } from "@/lib/product-downloads";
 
 type Vendor = { id: string; store_name: string; status: string };
 type Product = {
@@ -82,9 +83,8 @@ export default function VendorProductsPage() {
     if (cover && (!["image/jpeg", "image/png", "image/webp"].includes(cover.type) || cover.size > 5 * 1024 * 1024)) {
       setError("Cover must be JPG, PNG or WebP and no larger than 5 MB."); setBusy(false); return;
     }
-    if (files.length > 10 || files.some(f => f.size > 50 * 1024 * 1024)) {
-      setError("Choose up to 10 files, each no larger than 50 MB."); setBusy(false); return;
-    }
+    const fileValidationError = validateProductDownloadFiles(files);
+    if (fileValidationError) { setError(fileValidationError); setBusy(false); return; }
     const quantity = form.inventory_quantity.trim() === "" ? null : Number(form.inventory_quantity);
     if (form.product_type === "physical" && (quantity === null || !Number.isInteger(quantity) || quantity < 0)) { setError("Enter the available stock quantity for this physical product."); setBusy(false); return; }
     const payload = { title: form.title.trim(), slug, product_type: form.product_type, inventory_quantity: form.product_type === "physical" ? quantity : null, sku: form.sku.trim() || null, shipping_required: form.product_type === "physical", shipping_note: form.shipping_note.trim() || null, delivery_note: form.delivery_note.trim() || null, summary: form.summary.trim() || null,
@@ -113,9 +113,11 @@ export default function VendorProductsPage() {
       if (updateError) { setError("Cover uploaded but could not be attached: " + updateError.message); setBusy(false); return; }
     }
     for (const file of files) {
+      const contentType = getProductDownloadContentType(file);
+      if (!contentType) { setError(file.name + " has an unsupported file type or MIME type."); setBusy(false); return; }
       const path = productId + "/" + crypto.randomUUID() + "-" + file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const { error: uploadError } = await supabase.storage.from("product-downloads")
-        .upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+        .upload(path, file, { contentType, upsert: false });
       if (uploadError) { setError("Product saved, but file upload failed: " + uploadError.message); setBusy(false); return; }
       const { error: rowError } = await supabase.from("product_files").insert({
         product_id: productId, storage_path: path, file_name: file.name,
