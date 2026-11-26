@@ -92,19 +92,28 @@ export default function AcademyCoursePage() {
       ...section, lessons: lessonData.filter(lesson => lesson.section_id === section.id)
     })) as Section[];
     setSections(assembled);
-    const firstLesson = assembled.flatMap(section => section.lessons)[0];
-    setSelectedLessonId(current => current || firstLesson?.id || "");
+    const orderedLessons = assembled.flatMap(section => section.lessons);
+    let completedLessonIds: string[] = [];
 
     if (currentEnrollment?.status === "active") {
       const { data: progressData } = await supabase.from("academy_lesson_progress")
         .select("lesson_id").eq("enrollment_id", currentEnrollment.id);
-      setCompleted((progressData ?? []).map(item => item.lesson_id));
+      completedLessonIds = (progressData ?? []).map(item => item.lesson_id);
+      setCompleted(completedLessonIds);
       const { data: quizData } = await supabase.from("academy_quizzes")
         .select("id,title,instructions,pass_mark").eq("course_id", currentCourse.id).eq("is_published", true);
       setQuizzes((quizData ?? []) as Quiz[]);
     } else {
+      setCompleted([]);
       setQuizzes([]);
     }
+
+    // Resume enrolled students at their first unfinished lesson.
+    // If every lesson is complete, show the final lesson instead.
+    const resumeLesson = currentEnrollment?.status === "active"
+      ? orderedLessons.find(lesson => !completedLessonIds.includes(lesson.id)) ?? orderedLessons[orderedLessons.length - 1]
+      : orderedLessons[0];
+    setSelectedLessonId(current => current || resumeLesson?.id || "");
     setLoading(false);
   }
 
