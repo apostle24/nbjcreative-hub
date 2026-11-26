@@ -6,6 +6,7 @@ create table if not exists public.marketplace_refund_requests (
   order_id uuid not null unique references public.orders(id) on delete restrict,
   customer_id uuid not null references auth.users(id) on delete restrict,
   original_transaction_id text not null,
+  original_transaction_reference text not null,
   refund_reference text not null unique,
   amount numeric(12,2) not null check (amount > 0),
   currency char(3) not null,
