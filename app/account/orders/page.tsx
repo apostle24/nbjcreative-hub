@@ -25,6 +25,7 @@ type Order = {
   id: string; reference: string; amount: number | string; currency: string; payment_status: string;
   fulfillment_status: string; paid_at: string | null; created_at: string; items: OrderItem[];
 };
+type Refund = { id: string; order_id: string; refund_reference: string; amount: number|string; currency: string; reason: string; status: string; admin_note: string|null; requested_at: string; processed_at: string|null };
 
 export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -37,6 +38,8 @@ export default function OrderHistoryPage() {
   const [serviceNotes, setServiceNotes] = useState<Record<string, string>>({});
   const [serviceSaving, setServiceSaving] = useState<string | null>(null);
   const [serviceNotice, setServiceNotice] = useState("");
+  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [refundBusy, setRefundBusy] = useState<string | null>(null);
 
   async function loadOrders() {
     setLoading(true); setError("");
@@ -45,6 +48,9 @@ export default function OrderHistoryPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not load orders.");
       setOrders(result.orders || []);
+      const refundResponse = await fetch("/api/account/refunds", { cache: "no-store" });
+      const refundResult = await refundResponse.json();
+      if (refundResponse.ok) setRefunds(refundResult.refunds || []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load orders.");
     } finally {
@@ -165,6 +171,24 @@ export default function OrderHistoryPage() {
                     </div>;
                   })}
                 </div>
+              </div>}
+              {(isPaid || refunds.some(refund => refund.order_id === order.id)) && <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                {refunds.find(refund => refund.order_id === order.id) ? (() => {
+                  const refund = refunds.find(item => item.order_id === order.id)!;
+                  return <div><p className="text-sm font-bold text-ink">Refund request: <span className="capitalize">{refund.status.replaceAll("_", " ")}</span></p><p className="mt-1 text-xs text-slate-500">Reference {refund.refund_reference} · {refund.reason}</p>{refund.admin_note && <p className="mt-2 text-xs text-slate-600">Administrator note: {refund.admin_note}</p>}</div>;
+                })() : <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-bold text-ink">Need a refund?</p><p className="mt-1 text-xs text-slate-500">Submit a full-order refund request for administrator review.</p></div><button onClick={async () => {
+                  const reason = window.prompt("Why are you requesting a refund? (3–80 characters)");
+                  if (!reason || reason.trim().length < 3) return;
+                  setRefundBusy(order.id); setError("");
+                  try {
+                    const response = await fetch("/api/account/refunds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderReference: order.reference, reason: reason.trim() }) });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || "Could not submit refund request.");
+                    setRefunds(current => [result.refund, ...current]);
+                    setServiceNotice("Your refund request has been submitted for administrator review.");
+                  } catch (e) { setError(e instanceof Error ? e.message : "Could not submit refund request."); }
+                  finally { setRefundBusy(null); }
+                }} disabled={refundBusy === order.id} className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 disabled:opacity-50">{refundBusy === order.id ? "Submitting..." : "Request full refund"}</button></div>}
               </div>}
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-slate-600">{order.items.length} {order.items.length === 1 ? "product" : "products"} in this order</p>
