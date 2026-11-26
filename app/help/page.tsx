@@ -13,7 +13,7 @@ const topics = [
   { category: "Payments & refunds", icon: CreditCard, questions: [
     { q: "How do I pay for an order?", a: "Add the product you want to your cart and continue to checkout. Follow the payment instructions displayed there. A payment is complete only when the platform confirms it; an order record by itself is not proof of payment." },
     { q: "My payment is pending. What does that mean?", a: "A pending status means the platform has not yet confirmed the payment. Check your payment provider for its transaction status, then refresh your order history. If the status remains unresolved, contact support with your order reference and payment transaction reference. Do not send card details or passwords." },
-    { q: "How do I request a refund?", a: "Contact support with your order reference, the product involved and the reason for your request. The team will review the details and explain the applicable next steps. Refund eligibility and timing depend on the transaction and the platform's applicable policy." }
+    { q: "How do I request a refund?", a: "Open My Orders and find the paid Marketplace order. For an eligible Paystack order, choose Request full refund and provide your reason. Refund requests are reviewed by an administrator; submitting a request does not mean the refund has been approved or paid. If the option is unavailable or you need help, contact support with your order reference." }
   ]},
   { category: "Orders & downloads", icon: Download, questions: [
     { q: "Where can I find my purchases?", a: "Sign in and open My orders and downloads. The page shows your order history, payment status, purchased items and any digital access currently available." },
@@ -26,8 +26,8 @@ const topics = [
     { q: "Where are my saved products?", a: "Open My Wishlist from your customer account to view saved products. You can remove items or add available products to your cart." }
   ]},
   { category: "Marketplace & vendors", icon: Store, questions: [
-    { q: "How do I become a vendor?", a: "Visit the Vendor Centre and submit the store application with the requested details. Your application must be reviewed before vendor selling features become available." },
-    { q: "Why is my vendor product not visible in the marketplace?", a: "New vendor listings may require administrator review and publication. Check the listing status in your vendor workspace and your notifications for updates." },
+    { q: "How do I become a vendor?", a: "Sign in, open the Vendor Centre and complete your store details. Ordinary seller accounts are activated when the store is created, so you can continue to your product listings without waiting for routine account approval." },
+    { q: "Why is my vendor product not visible in the marketplace?", a: "Seller accounts can create and publish their own ordinary product listings from Vendor Centre. Check the listing status in your product workspace if a product is not visible. The platform may still moderate listings under its marketplace rules." },
     { q: "How do vendor payouts work?", a: "Eligible vendors can add payout details and submit a payout request from the vendor workspace. Requests are reviewed by the platform team. A request marked paid should only be treated as paid after the external transfer has actually been completed." }
   ]},
   { category: "Privacy & safety", icon: ShieldCheck, questions: [
