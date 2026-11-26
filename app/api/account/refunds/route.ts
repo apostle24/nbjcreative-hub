@@ -51,6 +51,20 @@ export async function POST(request: Request) {
     if (paymentError || !transactionId) {
       return NextResponse.json({ error: "We could not verify the original Paystack transaction. Please contact support." }, { status: 409 });
     }
+    const secret = process.env.PAYSTACK_SECRET_KEY;
+    if (!secret) return NextResponse.json({ error: "Paystack is not configured on the server." }, { status: 503 });
+    const verificationResponse = await fetch("https://api.paystack.co/transaction/verify/" + encodeURIComponent(String(transactionId)), {
+      headers: { Authorization: "Bearer " + secret }, cache: "no-store"
+    });
+    const verification = await verificationResponse.json();
+    const verifiedPayment = verification?.data;
+    if (!verificationResponse.ok || !verification?.status || verifiedPayment?.status !== "success" ||
+        String(verifiedPayment.id) !== String(transactionId) ||
+        Number(verifiedPayment.amount) !== Math.round(Number(order.amount) * 100) ||
+        String(verifiedPayment.currency).toUpperCase() !== String(order.currency).trim().toUpperCase() ||
+        typeof verifiedPayment.reference !== "string" || !verifiedPayment.reference) {
+      return NextResponse.json({ error: "The original Paystack payment could not be independently verified." }, { status: 409 });
+    }
 
     const { data: items, error: itemsError } = await admin.from("order_items")
       .select("id,vendor_id").eq("order_id", order.id);
@@ -71,7 +85,7 @@ export async function POST(request: Request) {
     const { data: refund, error: insertError } = await admin.from("marketplace_refund_requests")
       .insert({
         order_id: order.id, customer_id: user.id, original_transaction_id: String(transactionId),
-        refund_reference: refundReference, amount: order.amount, currency: order.currency,
+        original_transaction_reference: verifiedPayment.reference, refund_reference: refundReference, amount: order.amount, currency: order.currency,
         reason, customer_note: note || null
       })
       .select("id,order_id,refund_reference,amount,currency,reason,customer_note,status,requested_at")
