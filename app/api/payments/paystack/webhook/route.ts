@@ -61,10 +61,23 @@ export async function POST(request: Request) {
   if (event?.event && refundEvents[event.event]) {
     const data = event.data || {};
     const refundReference = typeof data.refund_reference === "string" ? data.refund_reference : "";
-    if (!refundReference) return NextResponse.json({ received: true, ignored: true });
+    const transactionReference = typeof data.transaction_reference === "string" ? data.transaction_reference : "";
+    if (!refundReference && !transactionReference) return NextResponse.json({ received: true, ignored: true });
     const admin = createAdminClient();
-    const { data: refund, error: lookupError } = await admin.from("marketplace_refund_requests")
-      .select("id").eq("refund_reference", refundReference).maybeSingle();
+    let refund: { id: string } | null = null;
+    let lookupError: { message: string } | null = null;
+    if (refundReference) {
+      const lookup = await admin.from("marketplace_refund_requests").select("id")
+        .eq("refund_reference", refundReference).maybeSingle();
+      refund = lookup.data;
+      lookupError = lookup.error;
+    }
+    if (!refund && !lookupError && transactionReference) {
+      const lookup = await admin.from("marketplace_refund_requests").select("id")
+        .eq("original_transaction_reference", transactionReference).maybeSingle();
+      refund = lookup.data;
+      lookupError = lookup.error;
+    }
     if (lookupError) return NextResponse.json({ error: "Could not find refund request." }, { status: 500 });
     if (!refund) return NextResponse.json({ received: true, ignored: true });
     const { error } = await admin.rpc("finalize_marketplace_refund", {
