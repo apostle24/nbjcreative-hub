@@ -61,7 +61,7 @@ export default function VerifyAcademyCertificatePage() {
               required
               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm uppercase outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
             />
-            <button type="submit" disabled={busy || !number.trim()} className="w-full rounded-xl bg-teal-700 px-5 py-3 font-bold text-white disabled:opacity-50">
+            <button type="submit" disabled={busy || !number.trim()} className="w-full min-h-12 rounded-xl px-5 py-3 font-bold disabled:cursor-not-allowed" style={{backgroundColor:busy?"#475569":"#0f766e",color:"#ffffff",WebkitTextFillColor:"#ffffff",border:"2px solid #115e59",opacity:1}}>
               {busy ? "Checking certificate..." : "Verify certificate"}
             </button>
           </form>
