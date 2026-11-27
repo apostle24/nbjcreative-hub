@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookOpen, GraduationCap, Clock3, ArrowRight } from "lucide-react";
+import { BookOpen, GraduationCap, Clock3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type Course = {
@@ -99,7 +99,7 @@ export default function AcademyPage() {
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">{course.short_description}</p>
               <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
                 <span className="font-bold text-slate-900">{price(course)}</span>
-                <Link href={"/academy/course/" + course.slug} className="inline-flex min-h-11 min-w-32 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold" style={{ backgroundColor: "#0f172a", color: "#ffffff", WebkitTextFillColor: "#ffffff", border: "2px solid #020617", opacity: 1 }}><span style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}>View course</span><ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" style={{ color: "#ffffff", stroke: "#ffffff", flexShrink: 0 }}/></Link>
+                <Link href={"/academy/course/" + course.slug} className="inline-flex min-h-11 min-w-32 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold" style={{ backgroundColor: "#0f172a", color: "#ffffff", WebkitTextFillColor: "#ffffff", border: "2px solid #020617", opacity: 1 }}><span style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}>View course</span><span aria-hidden="true" style={{ display: "inline-block", color: "#ffffff", WebkitTextFillColor: "#ffffff", fontSize: "20px", fontWeight: 900, lineHeight: 1, flexShrink: 0 }}>→</span></Link>
               </div>
             </div>
           </article>)}
