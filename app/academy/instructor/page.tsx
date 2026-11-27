@@ -114,7 +114,7 @@ export default function AcademyInstructorPage() {
     if (insertError) {
       setError("We couldn't create this course. Please check the details and try again.");
     } else {
-      setNotice("Course created as a draft. Add its sections and lessons before publishing.");
+      setNotice("Course saved as a draft. Open it below to add sections and lessons; the Publish button will be available when you are ready.");
       setForm(initialForm);
       await loadCourses(userId);
     }
@@ -172,7 +172,7 @@ export default function AcademyInstructorPage() {
           </div>
           <p className="text-xs leading-5 text-slate-500 md:col-span-2">Courses start as private drafts. Add your sections, video lessons and downloadable learning materials in the curriculum manager, then click Publish when your course is ready. Paid-course checkout and enrolment infrastructure is present; its complete payment flow still needs end-to-end verification before we promote paid publishing.</p>
           {error && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700 md:col-span-2">{error}</p>}
-          {notice && <p role="status" className="rounded-xl bg-teal-50 p-3 text-sm text-teal-800 md:col-span-2">{notice}</p>}
+          {notice && <div role="status" className="rounded-xl bg-teal-50 p-3 text-sm text-teal-800 md:col-span-2">{notice} <a href="#your-courses" className="ml-2 inline-flex font-semibold underline underline-offset-2">Go to Your courses ↓</a></div>}
           <button disabled={busy || !userId} className="rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-60 md:col-span-2">{busy ? "Saving..." : "Create course draft"}</button>
         </form>
       </section>
