@@ -69,6 +69,23 @@ export default function AcademyCoursePage() {
       setEnrollment(currentEnrollment);
     }
 
+    // Load public course feedback and restore this student's own review when enrolled.
+    const { data: reviewData } = await supabase.rpc("get_academy_course_reviews", { p_course_id: currentCourse.id });
+    setReviews((reviewData ?? []) as CourseReview[]);
+    if (currentEnrollment && ["active", "completed"].includes(currentEnrollment.status)) {
+      const { data: ownReview } = await supabase.from("academy_course_reviews")
+        .select("id,rating,review").eq("enrollment_id", currentEnrollment.id).maybeSingle();
+      if (ownReview) {
+        setMyReviewId(ownReview.id);
+        setMyRating(ownReview.rating);
+        setMyReview(ownReview.review ?? "");
+      } else {
+        setMyReviewId(""); setMyRating(5); setMyReview("");
+      }
+    } else {
+      setMyReviewId(""); setMyRating(5); setMyReview("");
+    }
+
     const { data: sectionData, error: sectionError } = await supabase
       .from("academy_sections").select("id,title,description,sort_order")
       .eq("course_id", currentCourse.id).order("sort_order", { ascending: true });
